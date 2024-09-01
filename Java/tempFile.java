@@ -1,4 +1,4 @@
-public class testFile
+public class tempFile
 {
     public static void main(String[] args)
     {

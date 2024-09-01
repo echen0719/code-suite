@@ -8,29 +8,29 @@ public class eightBall {
         String question = scan.nextLine();
 
         int random = (int)(Math.random() * 8 + 1);
-		
+
         long startIfElseIf = System.nanoTime();
         ifElseIfStatements(random);
         double endIfElseIf = System.nanoTime();
         double durationIfElseIf = endIfElseIf - startIfElseIf;
-		
+
         double startSwitchCase = System.nanoTime();
         switchCaseStatements(random);
         double endSwitchCase = System.nanoTime();
         double durationSwitchCase = endSwitchCase - startSwitchCase;
-		
-		System.out.println("\n\nJava Switch statements are " + ((durationIfElseIf - durationSwitchCase) * 100/durationIfElseIf) + 
-		"% faster than If-ElseIf-Else statements. " + (int) durationIfElseIf + "ns vs " + (int) durationSwitchCase + "ns.");
-		
-		System.out.println("\nThis is not definitive as the speed of these statements vary widely on use.");
-		
+
+        System.out.println("\n\nJava Switch statements are " + ((durationIfElseIf - durationSwitchCase) * 100 / durationIfElseIf) +
+            "% faster than If-ElseIf-Else statements. " + (int)durationIfElseIf + "ns vs " + (int)durationSwitchCase + "ns.");
+
+        System.out.println("\nThis is not definitive as the speed of these statements vary widely on use.");
+
         scan.close();
     }
 
     public static void ifElseIfStatements(int random) {
-		
-		System.out.print("\nIf-ElseIf-Else: ");
-		
+
+        System.out.print("\nIf-ElseIf-Else: ");
+
         if (random == 1) {
             System.out.print("It is certain");
         } else if (random == 2) {
@@ -51,9 +51,9 @@ public class eightBall {
     }
 
     public static void switchCaseStatements(int random) {
-		
-		System.out.print("\nSwitch: ");
-		
+
+        System.out.print("\nSwitch: ");
+
         switch (random) {
         case 1:
             System.out.print("It is certain");
