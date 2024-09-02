@@ -185,6 +185,13 @@ public class DidYouGetSnipedScore {
     System.out.println("\nPomp's WB Stats: https://stats.wbpjs.com/");
     System.out.println("Official WB Stats: https://stats.warbrokers.io");
     System.out.println("Copy and paste these into your browser.");
-  }
-  
+  } 
 }
+
+// Read ME:
+
+/*
+The idea for this code comes from Did You Get Sniped?'s Github. He deserves all credit for this project. Check him
+at https://github.com/DidYouGetSniped. If you are Did You Get Sniped? and you want this to be removed, you can
+contact me through my communications. Thanks for the idea, DYGS.
+*/
