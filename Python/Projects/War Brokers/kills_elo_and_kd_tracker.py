@@ -4,7 +4,7 @@ import csv
 from datetime import datetime
 import os
 
-# I got this off the web so I don't really know what this is (some plz explain)
+# I got this off the web so I don't really know what this is (someone plz explain)
 os.chdir(os.path.dirname(os.path.abspath(__file__))) # in case Python runs in system32 folder instead
 
 # reads UID from uid.txt and sets 'uid' variable.
