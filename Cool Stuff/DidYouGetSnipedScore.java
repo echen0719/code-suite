@@ -1,3 +1,5 @@
+// Translation in Java
+
 import java.util.*; //imports java utility class for Scanner and Random classes
 import java.io.*; //imports java i/o class for opening website
 
@@ -192,6 +194,5 @@ public class DidYouGetSnipedScore {
 
 /*
 The idea for this code comes from Did You Get Sniped?'s Github. He deserves all credit for this project. Check him
-at https://github.com/DidYouGetSniped. If you are Did You Get Sniped? and you want this to be removed, you can
-contact me through my communications. Thanks for the idea, DYGS.
+at https://github.com/DidYouGetSniped. Thanks for the idea, DYGS.
 */
