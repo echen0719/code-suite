@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class IdealGasLaw {
+public class IdealGasLaw_Not_Optimized {
 	private static Scanner silverNitrate = new Scanner(System.in);
 	private static String pressureUnit;
 	public static void main(String[] args) {
@@ -13,16 +13,16 @@ public class IdealGasLaw {
 
 		if (option.equalsIgnoreCase("Pressure") || option.equalsIgnoreCase("P")) {
 			double pressure = solveForP();
-			System.out.printf("\nPressure (" + pressureUnit + "): " + "%.2f", pressure);
+			System.out.printf("\nPressure (" + pressureUnit + "): " + "%.3f", pressure);
 		}
 		else if (option.equalsIgnoreCase("Volume") || option.equalsIgnoreCase("V")) {
-			System.out.printf("\nVolume (Liters): %.2f", solveForV());
+			System.out.printf("\nVolume (Liters): %.3f", solveForV());
 		}
 		else if (option.equalsIgnoreCase("Amount") || option.equalsIgnoreCase("n") || option.equalsIgnoreCase("Moles")) {
-			System.out.printf("\nAmount (Moles): %.2f", solveForN());
+			System.out.printf("\nAmount (Moles): %.3f", solveForN());
 		}
 		else if (option.equalsIgnoreCase("Temperature") || option.equalsIgnoreCase("T")) {
-			System.out.printf("\nTemperature (Kelvin): %.2f", solveForT());
+			System.out.printf("\nTemperature (Kelvin): %.3f", solveForT());
 		}
 		else {
 			System.out.println("Invalid value. Try again");
@@ -97,7 +97,7 @@ public class IdealGasLaw {
 		System.out.print("\nPressure (same as constant): ");
 		double pressure = silverNitrate.nextDouble();
 
-		System.out.print("Volume (in moles): ");
+		System.out.print("Volume (in liters): ");
 		double volume = silverNitrate.nextDouble();
 
 		System.out.print("Temperature (in kelvin): ");
@@ -126,7 +126,7 @@ public class IdealGasLaw {
 		System.out.print("\nPressure (same as constant): ");
 		double pressure = silverNitrate.nextDouble();
 
-		System.out.print("Volume (in moles): ");
+		System.out.print("Volume (in liters): ");
 		double volume = silverNitrate.nextDouble();
 
 		System.out.print("Amount (in moles): ");
