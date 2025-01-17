@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class IdealGasLaw_Not_Optimized {
+public class IdealGasLawNotOptimized {
 	private static Scanner silverNitrate = new Scanner(System.in);
 	private static String pressureUnit;
 	public static void main(String[] args) {
