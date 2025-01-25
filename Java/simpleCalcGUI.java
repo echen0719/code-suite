@@ -7,7 +7,8 @@ public class simpleCalcGUI {
 	private static JFrame frame = new JFrame("Simple 4 Function Calculator");
 	private static int width = (int)screenSize.width;
 	private static int height = (int)screenSize.height;
-	private static JLabel status = new JLabel("");
+	private static JLabel status = new JLabel();
+	private static JTextField input = new JTextField();
 
 	public static void main(String[] args) {
 		swing();
@@ -17,7 +18,6 @@ public class simpleCalcGUI {
 	}
 
 	public static void input() {
-		JTextField input = new JTextField();
 		input.setBounds((width-200)/2, (height-100)/2, 200, 25); //center but above button
 		frame.add(input);
 		// how to submit text and store in variable - later
@@ -26,15 +26,20 @@ public class simpleCalcGUI {
 	public static void button() {
 		JButton submit = new JButton("Submit");
 		submit.setBounds((width-200)/2, (height-50)/2, 200, 50); // center
+		frame.add(submit);
+
+		status.setBounds((width-200)/2, (height+100)/2, 250, 25); //center but below button
+		status.setFont(new Font("Calibri", Font.PLAIN, 32));
+		status.setForeground(Color.BLACK); // why called foreground?
+		frame.add(status);
 
 		submit.addActionListener(new ActionListener() { // standard action listener
-			public void actionPerformed(ActionEvent event) {
-				status.setText("Submitted");
+			public void actionPerformed(ActionEvent e) {
+				status.setText("Submitted: " + input.getText());
 			}
 		} );
 
-		frame.add(submit);
-		frame.add(status);
+		// I think actionListener goes last from code that I saw
 	}
 
 	public static void swing() {
