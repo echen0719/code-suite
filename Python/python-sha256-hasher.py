@@ -15,7 +15,7 @@ def hasher(beginning_zeros):
         if sha256_hash.startswith(prefix):
             end = time.time()
             time_taken = end - start
-            print("Found hash: {} for input: {}".format(sha256_hash, hash_input))
+            print("Found hash: {} for input: {}".format(sha256_hash, hash_input)) # I'll try using Python 2.x formatting
             print("Time taken: {:.2f} seconds".format(time_taken))
             break
 
