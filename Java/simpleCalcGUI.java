@@ -28,7 +28,7 @@ public class simpleCalcGUI {
 		submit.setBounds((width-200)/2, (height-50)/2, 200, 50); // center
 		frame.add(submit);
 
-		status.setBounds((width-200)/2, (height+100)/2, 250, 25); //center but below button
+		status.setBounds((width-200)/2, (height+100)/2, 250, 25); // center but below button
 		status.setFont(new Font("Calibri", Font.PLAIN, 32));
 		status.setForeground(Color.BLACK); // why called foreground?
 		frame.add(status);
