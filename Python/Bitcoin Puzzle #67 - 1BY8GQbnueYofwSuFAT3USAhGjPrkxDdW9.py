@@ -2,9 +2,14 @@ import random
 import ecdsa
 import hashlib
 import base58
+from numba import jit
+import numpy as np
+
+@jit(nopython=True)
+def genNum():
+    return np.random.rand()
 
 def address_giver(key_int):
-
     sign_key = ecdsa.SigningKey.from_secret_exponent(key_int, curve=ecdsa.SECP256k1)
     public_key = (sign_key.get_verifying_key().to_string("compressed")).hex()
 
@@ -21,7 +26,7 @@ def address_giver(key_int):
 # 4. Stop loop and save to file called found.txt (if found [which is never])
 
 while True:
-    i = random.randint(73786976294838206464, 147573952589676412928)
+    i = int(genNum() * 73786976294838206465) + 73786976294838206464
     private_key = address_giver(i)
     print("{}. {}".format(i, private_key))
 
@@ -34,4 +39,5 @@ while True:
 
 # I'll probably ask my friend to help me with C-family code
 
-# pycoin --> address_giver: 1370 hashes/s --> 3750 hashes/s (173.7% increase)
+# pycoin --> address_giver: 1370 hashes/s --> 3450 hashes/s (151.8% increase)
+# randint --> numpy: 3450 hashes/s --> 3840 hashes/s (11.3% increase)
