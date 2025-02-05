@@ -33,3 +33,5 @@ while True:
 # generates a random int between 73786976294838206464 - 147573952589676412928 and takes the address
 
 # I'll probably ask my friend to help me with C-family code
+
+# pycoin --> address_giver: 1370 hashes/s --> 3750 hashes/s (173.7% increase)
