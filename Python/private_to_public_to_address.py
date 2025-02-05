@@ -2,7 +2,7 @@ import ecdsa
 import hashlib
 import base58
 
-def hex(key_int):
+def address_giver(key_int):
     # https://privatekeys.pw/calc
 
     sign_key = ecdsa.SigningKey.from_secret_exponent(key_int, curve=ecdsa.SECP256k1)
@@ -20,4 +20,4 @@ def hex(key_int):
 
     print(address)
 
-hex(102987336249554097029535212322581322789799900648198034993379397001115665086549)
+address_giver(102987336249554097029535212322581322789799900648198034993379397001115665086549)

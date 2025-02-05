@@ -1,14 +1,28 @@
 import random
-from pycoin.symbols.btc import network as solver # https://pypi.org/project/pycoin/
+import ecdsa
+import hashlib
+import base58
+
+def address_giver(key_int):
+
+    sign_key = ecdsa.SigningKey.from_secret_exponent(key_int, curve=ecdsa.SECP256k1)
+    public_key = (sign_key.get_verifying_key().to_string("compressed")).hex()
+
+    public_key_bytes = bytes.fromhex(public_key)
+    ripemd160 = "00" + hashlib.new('ripemd160', hashlib.sha256(public_key_bytes).digest()).hexdigest()
+    checksum = (hashlib.sha256(hashlib.sha256(bytes.fromhex(ripemd160)).digest())).hexdigest()
+    address = base58.b58encode(bytes.fromhex(ripemd160) + bytes.fromhex(checksum[:8])).decode("utf-8")
+
+    return address
 
 # 1. Generate private key between low, high + 1
-# 2. Use pycoin to create address
+# 2. Use address_giver to find address
 # 3. Check if address is equal to reward wallet
-# 4. Stop loop and save to file called found.txt
+# 4. Stop loop and save to file called found.txt (if found [which is never])
 
 while True:
     i = random.randint(73786976294838206464, 147573952589676412928)
-    private_key = solver.parse.secret_exponent(i).address()
+    private_key = address_giver(i)
     print("{}. {}".format(i, private_key))
 
     if (private_key == "1BY8GQbnueYofwSuFAT3USAhGjPrkxDdW9"):
