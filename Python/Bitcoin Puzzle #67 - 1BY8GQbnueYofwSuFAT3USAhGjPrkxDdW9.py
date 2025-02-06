@@ -1,4 +1,3 @@
-import random
 import ecdsa
 import hashlib
 import base58
@@ -11,12 +10,11 @@ def genNum():
 
 def address_giver(key_int):
     sign_key = ecdsa.SigningKey.from_secret_exponent(key_int, curve=ecdsa.SECP256k1)
-    public_key = (sign_key.get_verifying_key().to_string("compressed")).hex()
+    public_key = sign_key.get_verifying_key().to_string("compressed")
 
-    public_key_bytes = bytes.fromhex(public_key)
-    ripemd160 = "00" + hashlib.new('ripemd160', hashlib.sha256(public_key_bytes).digest()).hexdigest()
-    checksum = (hashlib.sha256(hashlib.sha256(bytes.fromhex(ripemd160)).digest())).hexdigest()
-    address = base58.b58encode(bytes.fromhex(ripemd160) + bytes.fromhex(checksum[:8])).decode("utf-8")
+    ripemd160 = b"\x00" + hashlib.new('ripemd160', hashlib.sha256(public_key).digest()).digest()
+    checksum = hashlib.sha256(hashlib.sha256(ripemd160).digest()).digest()[:4]
+    address = base58.b58encode(ripemd160 + checksum).decode("utf-8")
 
     return address
 
@@ -27,12 +25,12 @@ def address_giver(key_int):
 
 while True:
     i = int(genNum() * 73786976294838206465) + 73786976294838206464
-    private_key = address_giver(i)
-    print("{}. {}".format(i, private_key))
+    address = address_giver(i)
+    print("{}. {}".format(i, address))
 
-    if (private_key == "1BY8GQbnueYofwSuFAT3USAhGjPrkxDdW9"):
+    if (address == "1BY8GQbnueYofwSuFAT3USAhGjPrkxDdW9"):
         with open("found.txt", "a") as file:
-            file.write("{}. {} ({})".format(i, private_key, hex(i)))
+            file.write("{}. {} ({})".format(i, address, hex(i)))
         break
 
 # generates a random int between 73786976294838206464 - 147573952589676412928 and takes the address
