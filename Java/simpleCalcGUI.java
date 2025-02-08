@@ -11,10 +11,14 @@ public class simpleCalcGUI {
 	private static JTextField input = new JTextField();
 
 	public static void main(String[] args) {
-		swing();
-		input();
-		button();
-		frame.setVisible(true);
+		//swing();
+		//input();
+		//button();
+		//frame.setVisible(true);
+		System.out.println(add(1, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6, 8.7)); // 1 + 2.1 + 3.2 + 4.3 + 5.4 + 6.5 + 7.6 + 8.7 = 38.8
+		System.out.println(subtract(10.9, 9.8, 8.7)); // 10.9 - 9.8 - 8.7 = -7.6
+		System.out.println(multiply(1, 2, 3, 4, 5)); // 5! = 120
+		System.out.println(divide(120, 5, 4, 3, 2, 1)); // 120 / 5! = 1
 	}
 
 	public static void input() {
@@ -46,5 +50,37 @@ public class simpleCalcGUI {
 		frame.setSize(width, height);
 		frame.setLocationRelativeTo(null); // center on screen
 		frame.setLayout(null); // absolute location
+	}
+
+	public static double add(double ... nums) {
+		double total = nums[0];
+		for (int i = 1; i < nums.length; i++) {
+			total += nums[i];
+		}
+		return total;
+	}
+
+	public static double subtract(double ... nums) {
+		double total = nums[0];
+		for (int i = 1; i < nums.length; i++) {
+			total -= nums[i];
+		}
+		return total;
+	}
+
+	public static double multiply(double ... nums) {
+		double total = nums[0];
+		for (int i = 1; i < nums.length; i++) {
+			total *= nums[i];
+		}
+		return total;
+	}
+
+	public static double divide(double ... nums) {
+		double total = nums[0];
+		for (int i = 1; i < nums.length; i++) {
+			total /= nums[i];
+		}
+		return total;
 	}
 }
