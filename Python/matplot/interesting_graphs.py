@@ -2,9 +2,6 @@ import matplotlib.pyplot as plt
 import math
 import random
 
-x = []
-y = []
-
 # from [start, end] (inclusive)
 def logger(base, start, end):
     if (start < 0 or end < 0):
@@ -15,7 +12,7 @@ def logger(base, start, end):
         return
     inc = start
     while inc <= end:
-        plt.plot(inc, math.log(inc, base), '.')
+        plt.plot(inc, math.log(inc, base), linestyle='-')
         inc += 0.1
     plt.show()
 
