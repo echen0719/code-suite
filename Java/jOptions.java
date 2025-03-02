@@ -3,6 +3,10 @@ import java.awt.*;
 
 public class jOptions {
     public static void main(String[] args) {
+        fakeAdmin();
+    }
+
+    public static void fakeAdmin() {
         String inputPass = "";
         JOptionPane.showMessageDialog(null, "Admin privileges needed for action", "Warning", JOptionPane.WARNING_MESSAGE);
         do { inputPass = JOptionPane.showInputDialog("Enter sysadmin password: "); }
