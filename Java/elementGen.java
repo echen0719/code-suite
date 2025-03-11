@@ -10,14 +10,11 @@ public class elementGen {
         int howMany = phosphate.nextInt();
 
         if (howMany == -1) {
-            int count = 0;
             System.out.println("Enter (key) to keep generating. Ctrl + C to exit.\n");
             while(true) {
-                System.out.print(elements[(int)(Math.random() * 118)]);
-                count++;
                 phosphate.nextLine();
+                System.out.print(elements[(int)(Math.random() * 118)]);
             }
-            System.out.println("\n" + count + " elements generated. Exiting now...");
         }
 
         else if (howMany >= 0) {
@@ -25,7 +22,6 @@ public class elementGen {
             for (int i = 1; i <= howMany; i++) {
                 System.out.println(elements[(int)(Math.random() * 118)]);
             }
-            System.out.println("\n" + howMany + " elements generated. Exiting now...");
         }
 
         else {
