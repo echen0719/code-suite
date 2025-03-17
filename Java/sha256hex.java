@@ -1,14 +1,27 @@
 import java.security.*;
 import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class sha256hex {
     public static void main(String[] args) throws NoSuchAlgorithmException {
-        System.out.println(sha256hex("hi")); // 8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4
+        Scanner wow = new Scanner(System.in);
+        int count = 0;
+        String input = "";
+        System.out.println("Guess the 9 character alphanumeric string!\n");
+        while (true) {
+            count++;
+            System.out.print("Guess " + count + ": ");
+            input = wow.nextLine();
+            if (sha256hex(input).equals("35e42b24631bcad0ae668efad72a54389902cd7a48b387aefbc64662ce1f6b5f")) {
+                System.out.println("\nCONGRATS! You are correct!");
+                System.exit(0);
+            }
+        }
     }
     
     public static String sha256hex(String input) throws NoSuchAlgorithmException {
         MessageDigest dig = MessageDigest.getInstance("SHA-256");
-        byte[] bytes = dig.digest("hi".getBytes(StandardCharsets.UTF_8));
+        byte[] bytes = dig.digest(input.getBytes(StandardCharsets.UTF_8));
         char[] hex = new char[bytes.length * 2];
         for (int i = 0; i < bytes.length; i++) { // found this on StackOverflow
             int v = bytes[i] & 0xFF;
