@@ -34,6 +34,10 @@ public class sha256GuessingGame {
 
     public static void guesser(double guesses, int length) throws NoSuchAlgorithmException {
         final String alphaNumeral = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        final String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+        final String numeral = "0123456789"
+        final String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        final String lower = "abcdefghijklmnopqrstuvwxyz"
         String guess = "";
 
         for (double i = 0; i < guesses; i++) {
