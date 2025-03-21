@@ -9,6 +9,10 @@ turtle.speed("fastest")
     #turtle.forward(50)
     #turtle.left(89.9)
 
+def rand():
+    for _ in range(10000):
+        turtle.goto(random.randint(-400, 400), random.randint(-400, 400))
+
 def axes():
     turtle.goto(0, 0)
     turtle.goto(-350, 0)
@@ -26,6 +30,7 @@ def point(x, y):
     turtle.pendown()
     turtle.dot(10)
 
+rand()
 axes()
 point(50, 200)
 turtle.done()
