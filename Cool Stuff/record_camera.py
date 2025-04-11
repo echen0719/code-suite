@@ -2,6 +2,7 @@ import os
 os.environ["OPENCV_LOG_LEVEL"] = "SILENT"
 # stop warnings that fill console
 import cv2
+import time
 import platform
 
 # https://docs.opencv.org/4.x/dd/d43/tutorial_py_video_display.html
@@ -34,6 +35,7 @@ def recordVideo(fileName, vidFormat, fps, sizeX, sizeY):
     # cv2.VideoCapture() doesn't work if output and input dimensions aren't equal
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, sizeX)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, sizeY)
+    cam.set(cv2.CAP_PROP_FPS, fps)
 
     print('Started!') # start confirm
     out = cv2.VideoWriter(fileName, cv2.VideoWriter_fourcc(*vidFormat), fps, (sizeX, sizeY))
@@ -41,6 +43,7 @@ def recordVideo(fileName, vidFormat, fps, sizeX, sizeY):
         success, frame = cam.read()
         if not success: break
         out.write(frame) # write before view
+        # time.sleep(1/fps)
         cv2.imshow('Video Feed Window', frame)
         if cv2.waitKey(1) == 27: break # press 'ESC' to exit
 
@@ -61,6 +64,9 @@ def takeImage(fileName, sizeX, sizeY):
         if not success: return
         cv2.imwrite(fileName, frame)
 
+    cam.release()
+    cv2.destroyAllWindows()
+
 def getColorOfPixel(sizeX, sizeY, locX, locY):
     cameraIndex = int(input('Which camera are you using (0 for main, 1 for secondary, and so on)?: '))
     cam = createCamera(cameraIndex)
@@ -74,9 +80,12 @@ def getColorOfPixel(sizeX, sizeY, locX, locY):
         b, g, r = frame[locX, locY]
         return '#{:02x}{:02x}{:02x}'.format(r, g, b), str(r) + ", " + str(g) + ", " + str(b)
 
+    cam.release()
+    cv2.destroyAllWindows()
+
 testCameras()
 # recordVideo('out.avi', 'XVID', 30.0, 1280, 720)
-recordVideo('out.avi', 'DIVX', 30.0, 1280, 720)
+# recordVideo('out.avi', 'DIVX', 30.0, 1280, 720)
 # takeImage('out.jpg', 1280, 720)
-# hexa, rgb = getColorOfPixel(1280, 720, 300, 300)
-# print(hexa + " or " + rgb + " @ (300, 300)")
+hexa, rgb = getColorOfPixel(1280, 720, 300, 300)
+print(hexa + " or " + rgb + " @ (300, 300)")
