@@ -2,6 +2,7 @@ import os
 os.environ["OPENCV_LOG_LEVEL"] = "SILENT"
 # stop warnings that fill console
 import cv2
+import time
 import platform
 
 # https://docs.opencv.org/4.x/dd/d43/tutorial_py_video_display.html
@@ -42,12 +43,11 @@ def recordVideo(fileName, vidFormat, fps, sizeX, sizeY):
         success, frame = cam.read()
         if not success: break
         out.write(frame) # write before view
-        out.write(frame) # duplicate so vide isn't sped up
         cv2.imshow('Video Feed Window', frame)
         if cv2.waitKey(1) == 27: break # press 'ESC' to exit
 
-    out.release()
     cam.release()
+    out.release()
     cv2.destroyAllWindows()
     print('Finished!') # end confirm
 
@@ -73,6 +73,8 @@ def getColorOfPixel(sizeX, sizeY, locX, locY):
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, sizeX)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, sizeY)
 
+    time.sleep(3) # get camera brightness calibrated
+
     if cam.isOpened():
         success, frame = cam.read()
         if not success: return
@@ -83,8 +85,8 @@ def getColorOfPixel(sizeX, sizeY, locX, locY):
     cv2.destroyAllWindows()
 
 testCameras()
-# recordVideo('out.avi', 'XVID', 30.0, 1280, 720)
-# recordVideo('out.avi', 'DIVX', 30.0, 1280, 720)
+# max my webcam can support without losing quality
+recordVideo('out.avi', 'XVID', 30.0, 640, 480)
 # takeImage('out.jpg', 1280, 720)
-hexa, rgb = getColorOfPixel(1280, 720, 300, 300)
+hexa, rgb = getColorOfPixel(640, 480, 300, 300)
 print(hexa + " or " + rgb + " @ (300, 300)")
