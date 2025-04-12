@@ -2,7 +2,6 @@ import os
 os.environ["OPENCV_LOG_LEVEL"] = "SILENT"
 # stop warnings that fill console
 import cv2
-import time
 import platform
 
 # https://docs.opencv.org/4.x/dd/d43/tutorial_py_video_display.html
@@ -43,7 +42,7 @@ def recordVideo(fileName, vidFormat, fps, sizeX, sizeY):
         success, frame = cam.read()
         if not success: break
         out.write(frame) # write before view
-        # time.sleep(1/fps)
+        out.write(frame) # duplicate so vide isn't sped up
         cv2.imshow('Video Feed Window', frame)
         if cv2.waitKey(1) == 27: break # press 'ESC' to exit
 
