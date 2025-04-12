@@ -51,42 +51,32 @@ def recordVideo(fileName, vidFormat, fps, sizeX, sizeY):
     cv2.destroyAllWindows()
     print('Finished!') # end confirm
 
-def takeImage(fileName, sizeX, sizeY):
+def takeImage(sizeX, sizeY, delay, fileName):
     cameraIndex = int(input('Which camera are you using (0 for main, 1 for secondary, and so on)?: '))
     cam = createCamera(cameraIndex)
 
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, sizeX)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, sizeY)
 
-    if cam.isOpened():
-        success, frame = cam.read()
-        if not success: return
-        cv2.imwrite(fileName, frame)
-
-    cam.release()
-    cv2.destroyAllWindows()
-
-def getColorOfPixel(sizeX, sizeY, locX, locY):
-    cameraIndex = int(input('Which camera are you using (0 for main, 1 for secondary, and so on)?: '))
-    cam = createCamera(cameraIndex)
-
-    cam.set(cv2.CAP_PROP_FRAME_WIDTH, sizeX)
-    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, sizeY)
-
-    time.sleep(3) # get camera brightness calibrated
+    time.sleep(delay) # get camera brightness calibrated
 
     if cam.isOpened():
         success, frame = cam.read()
         if not success: return
-        b, g, r = frame[locX, locY]
-        return '#{:02x}{:02x}{:02x}'.format(r, g, b), str(r) + ", " + str(g) + ", " + str(b)
+        if fileName: cv2.imwrite(fileName, frame) # empty string to not save
+        return frame
 
     cam.release()
     cv2.destroyAllWindows()
+
+def getColorOfPixel(sizeX, sizeY, locX, locY, delay):
+    frame = takeImage(sizeX, sizeY, delay, "")
+    b, g, r = frame[locX, locY]
+    return '#{:02x}{:02x}{:02x}'.format(r, g, b), str(r) + ", " + str(g) + ", " + str(b)
 
 testCameras()
 # max my webcam can support without losing quality
-recordVideo('out.avi', 'XVID', 30.0, 640, 480)
-# takeImage('out.jpg', 1280, 720)
-hexa, rgb = getColorOfPixel(640, 480, 300, 300)
+# recordVideo('out.avi', 'XVID', 30.0, 640, 480)
+takeImage(640, 480, 3, 'out.jpg')
+hexa, rgb = getColorOfPixel(640, 480, 300, 300, 3)
 print(hexa + " or " + rgb + " @ (300, 300)")
