@@ -31,8 +31,7 @@ def createCamera(cameraIndex):
 def getColorOnMouseClick(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         b, g, r = param[y, x]
-        print('RGB color at ({}, {}): ({}, {}, {})'.format(x, y, r, g, b))
-        print('Hex color at ({}, {}): {:02x}{:02x}{:02x}'.format(x, y, r, g, b))
+        print('Color at ({}, {}): rgb({}, {}, {}) | #{:02x}{:02x}{:02x}'.format(x, y, r, g, b, r, g, b))
         # turns out y, x will give correct value, not the other way around
 
 def recordVideo(fileName, vidFormat, fps, sizeX, sizeY):
