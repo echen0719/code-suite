@@ -28,13 +28,21 @@ def createCamera(cameraIndex):
         print('Cannot open webcam')
         exit
 
+colorInfo, fontColor, textX, textY = "", (0, 0, 0), 0, 0
+# I think this is one way to do it
+
 def getColorOnMouseClick(event, x, y, flags, param):
+    global colorInfo, fontColor, textX, textY
+    
     if event == cv2.EVENT_LBUTTONDOWN:
-        b, g, r = param[y, x]
-        print('Color at ({}, {}): rgb({}, {}, {}) | #{:02x}{:02x}{:02x}'.format(x, y, r, g, b, r, g, b))
-        # turns out y, x will give correct value, not the other way around
+        b, g, r = param[y, x] # turns out y, x will give correct value, not the other way around
+        textX, textY = x, y
+        fontColor = (int(255 - b), int(255 - g), int(255 - r)) # inverted
+        colorInfo = '({}, {}): rgb({}, {}, {}) | #{:02x}{:02x}{:02x}'.format(x, y, r, g, b, r, g, b)
 
 def recordVideo(fileName, vidFormat, fps, sizeX, sizeY):
+    global colorInfo, fontColor, textX, textY
+    
     cameraIndex = int(input('Which camera are you using (0 for main, 1 for secondary, and so on)?: '))
     cam = createCamera(cameraIndex)
 
@@ -52,9 +60,11 @@ def recordVideo(fileName, vidFormat, fps, sizeX, sizeY):
         success, frame = cam.read()
         if not success: break
         out.write(frame) # write before view
-        cv2.imshow('Video Feed Window', frame)
         cv2.setMouseCallback('Video Feed Window', getColorOnMouseClick, param=frame)
         # supposedly, this will cut number of iterations
+        if colorInfo: # this works well but I need to fix it when text goes outside the boundaries
+            cv2.putText(frame, colorInfo, (textX + 10, textY + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, fontColor, 2)
+        cv2.imshow('Video Feed Window', frame)
         if cv2.waitKey(1) == 27: break # press 'ESC' to exit
 
     cam.release()
