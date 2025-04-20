@@ -1,8 +1,12 @@
 import os
 os.environ['OPENCV_LOG_LEVEL'] = 'SILENT'
 import cv2
+import pytesseract
 import platform
+import time
 
+# current setup
+pytesseract.pytesseract.tesseract_cmd = r'C:\Users\{}\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'.format(os.environ.get('USERNAME'))
 platform = platform.system()
 
 def testCameras():
@@ -29,14 +33,23 @@ def startCamera():
     hheight = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT)) // 2
     # floor division because I don't want doubles
 
+    start = time.time()
+
     while cam.isOpened():
-        success, frame = cam.read()
-        if not success: break
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        frame = frame[hheight - 50 : hheight + 50, hwidth - 125 : hwidth + 125] # weird that it is (y, x)
-        frame = cv2.adaptiveThreshold(frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)
-        # https://docs.opencv.org/4.x/d7/d4d/tutorial_py_thresholding.html
-        cv2.imshow('Video Feed Window', frame)
+        if time.time() - start >= 1.0: # one frame per second
+            start = time.time()
+            success, frame = cam.read()
+            if not success: break
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame = frame[hheight - 50 : hheight + 50, hwidth - 125 : hwidth + 125] # weird that it is (y, x)
+            frame = cv2.adaptiveThreshold(frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)
+            # https://docs.opencv.org/4.x/d7/d4d/tutorial_py_thresholding.html
+
+            digits = pytesseract.image_to_string(frame, config='digits').strip()
+            if digits:
+                print("Detected digits: {}".format(digits))
+
+            cv2.imshow('Video Feed Window', frame)
         if cv2.waitKey(1) == 27: break
 
     cam.release()
