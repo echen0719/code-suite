@@ -1,17 +1,21 @@
 # check it out: https://www.learnpytorch.io/00_pytorch_fundamentals/
 
 import torch
+import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
-tensor = torch.tensor([1, 2, 3])
-## print(tensor + 10) # out: tensor([11, 12, 13])
-## print(tensor - 10) # out: tensor([-9, -8, -7])
-## print(tensor * 10) # out: tensor([10, 20, 30])
-## print(tensor / 10) # out: tensor([0.1000, 0.2000, 0.3000])
+countTensor = torch.tensor([1, 2, 3])
+## print(countTensor + 10) # out: tensor([11, 12, 13])
+## print(countTensor - 10) # out: tensor([-9, -8, -7])
+## print(countTensor * 10) # out: tensor([10, 20, 30])
+## print(countTensor / 10) # out: tensor([0.1000, 0.2000, 0.3000])
+## print(countTensor * countTensor) # out: tensor([1, 4, 9])
 
-## print(tensor) # tensor([1, 2, 3])
-# tensor remains the same because operations don't change tensor itself 
+# ex. countTensor += 10 would change values of countTensor
+
+## print(countTensor) # out: tensor([1, 2, 3])
+# countTensor remains the same because operations don't change countTensor itself
 
 # MATRIX MULTIPLICATION
 # I still need to learn this mathematically
@@ -81,6 +85,8 @@ rangedTensor = rangedTensor.type(torch.int8)
 ## print(rangedTensor.dtype) # torch.int8
 ## print(rangedTensor.device) # cpu
 
+# MOST OTHER OPERATIONS
+
 primus = torch.tensor([[3, 2, 1], [6, 5, 4], [9, 8, 7]])
 secundus = torch.arange(start=1, end=10, step=1)
 
@@ -126,9 +132,20 @@ quartus = torch.randint(high=10, size=(1, 2, 3))
 ## print(quartus.permute(2, 1, 0)) # out: tensor([  [ [8], [3] ], [ [9], [9] ], [ [6], [1] ]  ])
 
 # values inside reshape() need to multiply to size of tensor
-reshaped = torch.arange(1, 9).reshape(2, 2, 2)
+reshaped = torch.arange(1, 9).reshape(2, 2, 2) # almost self explanatory
 ## print(reshaped) # out: tensor([  [ [1, 2], [3, 4] ], [ [5, 6], [7, 8] ]  ])
 ## print("{}, {}, {}".format(reshaped[0][1][0], reshaped[1][0][1], reshaped[0][0][1])) # out: 3, 6, 2
 
-# numpy styled
-print(reshaped[:, :, 0]) # out: tensor([[1, 3], [5, 7]])
+np2t = np.array([-3, -2, -1, 0, 1, 2, 3])
+npTensor = torch.from_numpy(np2t)
+## print(npTensor) # out: tensor([-3, -2, -1,  0,  1,  2,  3])
+t2np = npTensor.numpy()
+## print(t2np) # out: [-3 -2 -1  0  1  2  3]
+
+tensorA = torch.zeros(10)
+tensorB = torch.ones(10)
+tensorC = torch.zeros(10)
+
+# returns a tensor with booleans
+## print(tensorA == tensorB) # tensor([False, False, False, False, False, False, False, False, False, False])
+## print(tensorA == tensorC) # tensor([True, True, True, True, True, True, True, True, True, True])
