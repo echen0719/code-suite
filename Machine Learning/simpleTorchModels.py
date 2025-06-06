@@ -79,7 +79,7 @@ for trial in range(100):
     loss.backward() # backpropagation
     optim.step() # increments the optimizer
 
-    # training loop
+    # testing loop
     model.eval() # put model.eval() inside if validating after each trial
     with torch.inference_mode():
         tePred = model(xTest) # forward
