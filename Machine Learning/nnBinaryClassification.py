@@ -90,12 +90,13 @@ def accuracy(yPreds, yTrue): # if needed
 lossFx = nn.BCEWithLogitsLoss() # sigmoid activation
 optim = torch.optim.SGD(params=model.parameters(), lr=0.1)
 # LEARNING RATE is really IMPORTANT!!!
+# Also, Adam is probably better of a choice than SGD
 
 # train loop
 for trial in range(10000):
     model.train()
     trLogits = model(xTrain).squeeze()
-    #  predProbs is torch.sigmoid(yLogits)
+    #  trPredProbs is torch.sigmoid(trLogits)
     trPredLabels = torch.round(torch.sigmoid(trLogits))
     trLoss = lossFx(trLogits, yTrain) # BCEWithLogits needs logits
     trAcc = accuracy(trPredLabels, yTrain)
