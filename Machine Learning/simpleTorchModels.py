@@ -32,11 +32,12 @@ class linRegModel(nn.Module):
         # require_grad=true (grad meaning gradients)
         self.weight = nn.Parameter(torch.randn(1, dtype=torch.float))
         self.bias = nn.Parameter(torch.randn(1, dtype=torch.float))
+        ## self.linear = nn.Linear(1, 1) # <-- same
 
     # forward overwritten, x is input tensor
     def forward(self, x):
-        return self.weight * x + self.bias
-        # actual linear reg
+        return self.weight * x + self.bias # actual linear reg
+        ## return self.linear(x) # also linear reg
 
 # y = mx + b
 weight = 0.7 # m
