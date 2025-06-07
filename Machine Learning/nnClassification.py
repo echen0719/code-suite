@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 torch.manual_seed(42)
+torch.cuda.manual_seed(42)
 
 class circleModel(nn.Module):
     def __init__(self):
@@ -44,7 +45,11 @@ xTensor = torch.from_numpy(X).type(torch.float32)
 yTensor = torch.from_numpy(y).type(torch.float32)
 
 # split data for train and test
-xTrain, xTest, yTrain, yTest = train_test_split(X, y, test_size=0.2, random_state=42)
+xTrain, xTest, yTrain, yTest = train_test_split(xTensor, yTensor, test_size=0.2, random_state=42)
+
+# assign to device
+xTrain, yTrain = xTrain.to(device), yTrain.to(device)
+xTest, yTest = xTest.to(device), yTest.to(device)
 
 model = circleModel().to(device) # or
 model = nn.Sequential(
@@ -55,6 +60,33 @@ model = nn.Sequential(
 ## print(next(model.parameters()).device) # check device
 ## print(model.state_dict()) # yeilds size (5, 2) for 0.weight and (5) for 0.bias
 
+def accuracy(yPreds, yTrue): # if needed
+    correct = torch.eq(yTrue, yPreds).sum().item() # returns number of yTrue == yPreds
+    return correct / len(yPreds)
+
 # lossFx = nn.BECLoss() # need to go through sigmoid activation before BECLoss
-lossFx = nn.BECWithLogitsLoss() # sigmoid activation
+# BCEWithLogits expects yLogits while BCE expects predProbs
+lossFx = nn.BCEWithLogitsLoss() # sigmoid activation
 optim = torch.optim.SGD(params=model.parameters(), lr=0.01)
+
+# train loop
+for trial in range(100):
+    model.train()
+    trLogits = model(xTrain).squeeze()
+    #  predProbs is torch.sigmoid(yLogits)
+    trPredLabels = torch.round(torch.sigmoid(trLogits)) # torch.round(trLogits) is also fine
+    trLoss = lossFx(trLogits, yTrain)
+    trAcc = accuracy(trPredLabels, yTrain)
+    optim.zero_grad()
+    trLoss.backward()
+    optim.step()
+
+    model.eval()
+    with torch.inference_mode():
+        teLogits = model(xTest).squeeze()
+        tePredLabels = torch.round(torch.sigmoid(teLogits)) # torch.round(teLogits) is also fine
+        teLoss = lossFx(teLogits, yTest)
+        teAcc = accuracy(tePredLabels, yTest)
+
+    if trial % 10 == 0:
+        print("Trial: {} | TrLoss: {:.3f} | TeLoss: {:.3f} | TrAcc: {:.3f} | TeACC: {:.3f}".format(trial, trLoss, teLoss, trAcc, teAcc))

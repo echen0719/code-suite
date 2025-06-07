@@ -74,9 +74,9 @@ for trial in range(100):
     # gradients have to be enabled for backpropagation to work
     model.train() # all parameters requiring gradients will
     trPreds = model(xTrain) # forward pass
-    loss = lossFx(trPreds, yTrain) # loss calculation
+    trLoss = lossFx(trPreds, yTrain) # loss calculation
     optim.zero_grad() # set back to zero after each loop
-    loss.backward() # backpropagation
+    trLoss.backward() # backpropagation
     optim.step() # increments the optimizer
 
     # testing loop
@@ -86,7 +86,7 @@ for trial in range(100):
         teLoss = lossFx(tePred, yTest) # find loss
 
     if trial % 10 == 0:
-        print("Trial: {} | Loss: {} | Test loss: {}".format(trial, loss, teLoss))
+        print("Trial: {} | Training Loss: {} | Test loss: {}".format(trial, loss, teLoss))
 
 with torch.inference_mode(): # or else model(xTest) doesn't work'
     plot(xTrain, yTrain, xTest, yTest, predLabels=model(xTest))
