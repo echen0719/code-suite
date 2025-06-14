@@ -1,4 +1,5 @@
 # check this out: https://www.learnpytorch.io/03_pytorch_computer_vision/
+
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -63,7 +64,7 @@ def accuracy(yPreds, yTrue):
     return correct / len(yPreds)
 
 lossFx = nn.CrossEntropyLoss()
-optim = torch.optim.SGD(params=model.parameters(), lr=0.03)
+optim = torch.optim.Adam(params=model.parameters(), lr=0.03)
 
 for trial in range(5):
     accuTrLoss, accuTrAcc = 0, 0
@@ -79,8 +80,8 @@ for trial in range(5):
         trLoss.backward()
         optim.step()
         # model optimizes itself after each batch
-    accuTrLoss /= len(trainDataLoader)
-    accuTrAcc /= len(trainDataLoader)
+    accuTrLoss /= len(trainDataLoader) # gets trLoss average for each batch
+    accuTrAcc /= len(trainDataLoader) # gets trAcc average for each batch
 
     accuTeLoss, accuTeAcc = 0, 0
     model.eval()
@@ -90,7 +91,7 @@ for trial in range(5):
             teLogits = model(image)
             accuTeLoss += lossFx(teLogits, label)
             accuTeAcc += accuracy(label, teLogits.argmax(dim=1))
-        accuTeLoss /= len(testDataLoader)
-        accuTeAcc /= len(testDataLoader)
+        accuTeLoss /= len(testDataLoader) # gets teLoss average for each batch
+        accuTeAcc /= len(testDataLoader) # gets teAcc average for each batch
 
-    print("Train {}: TrLoss: {:3f} | TrAcc: {:3f} | TeLoss: {:3f} | TeAcc: {:3f}".format(trial, accuTrLoss, accuTrAcc, accuTeLoss, accuTeAcc))
+    print("Trial {}: TrLoss: {:3f} | TrAcc: {:3f} | TeLoss: {:3f} | TeAcc: {:3f}".format(trial, accuTrLoss, accuTrAcc, accuTeLoss, accuTeAcc))
