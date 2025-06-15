@@ -9,6 +9,7 @@ from torchvision import transforms
 # transforms.ToTensor
 import matplotlib.pyplot as plt
 import random
+from nnFunctions import *
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 torch.manual_seed(42)
@@ -20,7 +21,11 @@ class CIFARModel(nn.Module):
         self.linearStack = nn.Sequential(
             nn.Flatten(), # converts to one vector with all data
             nn.Linear(in_features=in_features, out_features=hidden_units),
-            nn.Linear(in_features=hidden_units, out_features=out_features)
+            nn.ReLU(), # non-linear layer connecting linear layers
+            nn.Linear(in_features=hidden_units, out_features=hidden_units),
+            nn.ReLU(),
+            nn.Linear(in_features=hidden_units, out_features=out_features),
+            nn.ReLU()
         )
     def forward(self, x):
         return self.linearStack(x)
@@ -47,8 +52,8 @@ classesLength = len(trainData.classes) # this multiclass dataset has 10 classes 
 ## visualization(trainData)
 
 # using DataLoader to split data into batches of 32 which creates computational advantages
-trainDataLoader = DataLoader(dataset=trainData, batch_size=32, shuffle=True) # 1563 batches
-testDataLoader = DataLoader(dataset=testData, batch_size=32) # 313 batches
+trainDataLoader = DataLoader(dataset=trainData, batch_size=64, shuffle=True) # 782 batches
+testDataLoader = DataLoader(dataset=testData, batch_size=64) # 157 batches
 
 # trainFeaturesBatch, trainLabelsBatch = next(iter(trainDataLoader))
 # testFeaturesBatch, testLabelsBatch = next(iter(testDataLoader))
@@ -64,18 +69,18 @@ def accuracy(yPreds, yTrue):
     return correct / len(yPreds)
 
 lossFx = nn.CrossEntropyLoss()
-optim = torch.optim.Adam(params=model.parameters(), lr=0.03)
+optim = torch.optim.Adam(params=model.parameters(), lr=0.001)
 
 for trial in range(5):
     accuTrLoss, accuTrAcc = 0, 0
+    model.train()
     # one batch of data goes through inner training loop
     for batch, (image, label) in enumerate(trainDataLoader):
         image, label = image.to(device), label.to(device)
-        model.train()
         trLogits = model(image)
         trLoss = lossFx(trLogits, label)
         accuTrLoss += trLoss
-        accuTrAcc += accuracy(label, trLogits.argmax(dim=1))
+        accuTrAcc += accuracy(trLogits.argmax(dim=1), label)
         optim.zero_grad()
         trLoss.backward()
         optim.step()
@@ -90,8 +95,13 @@ for trial in range(5):
             image, label = image.to(device), label.to(device)
             teLogits = model(image)
             accuTeLoss += lossFx(teLogits, label)
-            accuTeAcc += accuracy(label, teLogits.argmax(dim=1))
+            accuTeAcc += accuracy(teLogits.argmax(dim=1), label)
         accuTeLoss /= len(testDataLoader) # gets teLoss average for each batch
         accuTeAcc /= len(testDataLoader) # gets teAcc average for each batch
 
-    print("Trial {}: TrLoss: {:3f} | TrAcc: {:3f} | TeLoss: {:3f} | TeAcc: {:3f}".format(trial, accuTrLoss, accuTrAcc, accuTeLoss, accuTeAcc))
+    print("Trial {}: TrLoss: {:3f} | TrAcc: {:3f} | TeLoss: {:3f} | TeAcc: {:3f}".format(trial + 1, accuTrLoss, accuTrAcc, accuTeLoss, accuTeAcc))
+
+for trial in range(5):
+    print("Trial {}: ".format(trial + 1), end='')
+    trainStep(model, trainDataLoader, lossFx, optim, accuracy, device)
+    testStep(model, testDataLoader, lossFx, optim, accuracy, device)
