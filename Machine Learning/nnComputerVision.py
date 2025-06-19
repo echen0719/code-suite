@@ -105,3 +105,16 @@ for trial in range(5):
     print("Trial {}: ".format(trial + 1), end='')
     trainStep(model, trainDataLoader, lossFx, optim, accuracy, device)
     testStep(model, testDataLoader, lossFx, optim, accuracy, device)
+
+'''
+Trial 1: TrLoss: 2.251026 | TrAcc: 0.131394 | TeLoss: 2.166605 | TeAcc: 0.174463
+Trial 2: TrLoss: 2.153641 | TrAcc: 0.176351 | TeLoss: 2.150611 | TeAcc: 0.176354
+Trial 3: TrLoss: 2.145334 | TrAcc: 0.179208 | TeLoss: 2.142420 | TeAcc: 0.179439
+Trial 4: TrLoss: 2.140495 | TrAcc: 0.181706 | TeLoss: 2.136389 | TeAcc: 0.183221
+Trial 5: TrLoss: 2.137079 | TrAcc: 0.183804 | TeLoss: 2.134771 | TeAcc: 0.184713
+Trial 1: TrLoss: 2.134105 | TrAcc: 0.184583 | TeLoss: 2.135751 | TeAcc: 0.185510
+Trial 2: TrLoss: 2.134488 | TrAcc: 0.187480 | TeLoss: 2.133943 | TeAcc: 0.186206
+Trial 3: TrLoss: 2.133249 | TrAcc: 0.185602 | TeLoss: 2.150172 | TeAcc: 0.179538
+Trial 4: TrLoss: 2.131525 | TrAcc: 0.185922 | TeLoss: 2.135390 | TeAcc: 0.188595
+Trial 5: TrLoss: 2.129478 | TrAcc: 0.188359 | TeLoss: 2.144231 | TeAcc: 0.184216
+'''
