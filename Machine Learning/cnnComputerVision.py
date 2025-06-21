@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 import torchvision
 from torchvision import datasets
 from torchvision import transforms
+from torchvision.datasets import ImageFolder
 from nnFunctions import *
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -48,8 +49,12 @@ class CIFARModel(nn.Module):
         x = self.classifier(x)
         return x
 
-trainData = datasets.CIFAR10(root="data", train=True, download=True, transform=transforms.ToTensor(), target_transform=None)
-testData = datasets.CIFAR10(root="data", train=False, download=True, transform=transforms.ToTensor())
+# Uncomment for CINIC-10 images to prevent overfitting
+trainData = ImageFolder(root="data/cinic-10-py/train", transform=transforms.ToTensor(), target_transform=None)
+testData = ImageFolder(root="data/cinic-10-py/test", transform=transforms.ToTensor())
+
+# trainData = datasets.CIFAR10(root="data", train=True, download=True, transform=transforms.ToTensor(), target_transform=None)
+# testData = datasets.CIFAR10(root="data", train=False, download=True, transform=transforms.ToTensor())
 
 classesLength = len(trainData.classes)
 
