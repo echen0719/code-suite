@@ -1,6 +1,10 @@
 import torch
 
-def trainStep(model, dataLoader, lossFx, optim, accuracy, device, scheduler):
+def accuracy(yPreds, yTrue):
+    correct = torch.eq(yTrue, yPreds).sum().item()
+    return correct / len(yPreds)
+
+def trainStep(model, dataLoader, lossFx, optim, accuracy, device, scheduler=None):
     accuLoss, accuAcc = 0, 0
     model.to(device); model.train()
     for batch, (image, label) in enumerate(dataLoader):
@@ -12,7 +16,8 @@ def trainStep(model, dataLoader, lossFx, optim, accuracy, device, scheduler):
         optim.zero_grad()
         loss.backward()
         optim.step()
-        scheduler.step()
+        if scheduler:
+            scheduler.step()
     accuLoss /= len(dataLoader)
     accuAcc /= len(dataLoader)
     print("TrLoss: {:3f} | TrAcc: {:3f} | ".format(accuLoss, accuAcc), end='')
