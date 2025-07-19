@@ -71,6 +71,6 @@ df = pd.DataFrame({
 def getDataFrame():
     return df
 
-print(df.head(50))
+# print(df.head(50))
 counts = df['love_for_math'].value_counts()
-print(counts)
+# print(counts)
