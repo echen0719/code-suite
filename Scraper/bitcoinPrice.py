@@ -1,7 +1,15 @@
+from twilio.rest import Client
 import requests
 import time
 
-def sendText():
+Account_SID = ''
+Auth_Token = ''
+Sender_Num = ''
+Reciever_Num = ''
+
+def sendText(price):
+    client = Client(sid, token)
+    message = client.messages.create(body='Current price: {}'.format(price), from_=sender, to=reciever)
 
 def getPrice():
     request = requests.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd')
@@ -17,7 +25,7 @@ def getPrice():
 
 while True:
     price = getPrice()
-    # if price <= 90000:
-        # send text
+    if price <= 90000:
+        sendText(price)
     print(price)
     time.sleep(5)
