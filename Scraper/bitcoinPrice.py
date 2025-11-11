@@ -2,6 +2,7 @@ from twilio.rest import Client
 import requests
 import time
 
+# replace these with info from Twilio
 Account_SID = ''
 Auth_Token = ''
 Sender_Num = ''
