@@ -161,13 +161,12 @@ def visualizeResults(losses, accuracies, numTrials, title):
 
     plt.show()
 
-trainData = datasets.FashionMNIST(root='data', train=True, download=True, transform=transforms.ToTensor())
-testData = datasets.FashionMNIST(root='data', train=False, download=True, transform=transforms.ToTensor())
-
-trainDataLoader = DataLoader(trainData, batch_size=64, shuffle=True)
-testDataLoader = DataLoader(testData, batch_size=64, shuffle=False)
-
 def main(numTrials):
+    trainData = datasets.FashionMNIST(root='data', train=True, download=True, transform=transforms.ToTensor())
+    testData = datasets.FashionMNIST(root='data', train=False, download=True, transform=transforms.ToTensor())
+
+    trainDataLoader = DataLoader(trainData, batch_size=64, shuffle=True)
+    testDataLoader = DataLoader(testData, batch_size=64, shuffle=False)
     ## dataVisualization(trainDataLoader)
 
     model = MLPModel().to(device)
