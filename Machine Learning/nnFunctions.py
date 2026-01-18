@@ -1,10 +1,12 @@
 import torch
+from tqdm import tqdm
 
 def accuracy(yPreds, yTrue):
     correct = torch.eq(yTrue, yPreds).sum().item()
     return correct / len(yPreds)
 
-def trainStep(model, dataLoader, lossFx, optim, accuracy, device, scheduler=None):
+def trainStep(model, dataLoader, lossFx, optim, accuracy, device, scheduler=None, useTQDM=False):
+    if useTQDM: dataLoader = tqdm(dataLoader, desc="Training")
     accuLoss, accuAcc = 0, 0
     model.to(device); model.train()
     for batch, (image, label) in enumerate(dataLoader):
@@ -22,7 +24,8 @@ def trainStep(model, dataLoader, lossFx, optim, accuracy, device, scheduler=None
     accuAcc /= len(dataLoader)
     print("TrLoss: {:3f} | TrAcc: {:3f} | ".format(accuLoss, accuAcc), end='')
 
-def testStep(model, dataLoader, lossFx, optim, accuracy, device):
+def testStep(model, dataLoader, lossFx, optim, accuracy, device, useTQDM=False):
+    if useTQDM: dataLoader = tqdm(dataLoader, desc="Testing")
     accuLoss, accuAcc = 0, 0
     model.to(device); model.eval()
     with torch.inference_mode():

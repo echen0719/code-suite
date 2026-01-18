@@ -1,4 +1,5 @@
 # https://colab.research.google.com/drive/1Y0AfQRT_QhK-WmGIr53FcKwduS8Cp5Em
+from nnFunctions import *
 
 import torch
 from torch import nn
@@ -32,24 +33,34 @@ def dataVisualization(dataLoader):
     plt.show()
 
 class CNNModel(nn.Module):
-    def __init__(self, out_features=101):
+    def __init__(self, in_features, out_features, hidden_units=32):
         super().__init__()
-        self.stack = nn.Sequential(
-            # input is (32, 3, 224, 224)
-            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=5, stride=1, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True), # according to docs, this doesn't make a copy
+        # Input shape: (32, 3, 224, 224)
+        self.conv_block = nn.Sequential(
+            nn.Conv2d(in_channels=in_features, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(hidden_units), # normalize data to improve training
+            nn.ReLU(),
 
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(32),
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(hidden_units),
+            nn.ReLU(),
+
+            nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            # Ouput shape: (32, 32, 224, 224)
+
             nn.MaxPool2d(kernel_size=2), # simplfies image by (2x2) or 4 times
-
-            nn.Flatten()
+            # Output shape: (32, 32, 112, 112)
         )
+        self.classifier = nn.Sequential(
+            nn.Flatten(), # flattens to 32 x 112 x 112
+            nn.Linear(in_features=hidden_units*112*112, out_features=out_features)
+        )
+
     def forward(self, x):
-        return self.stack(x)
+        x = self.conv_block(x)
+        x = self.classifier(x)
+        return x
 
 def main():
     transform = transforms.Compose([
@@ -64,15 +75,18 @@ def main():
     trainDataLoader = DataLoader(trainData, batch_size=64, shuffle=True)
     testDataLoader = DataLoader(testData, batch_size=64, shuffle=False)
 
-    # dataVisualization(trainDataLoader)
+    ## dataVisualization(trainDataLoader)
 
-    model = CNNModel().to(device)
+    model = CNNModel(3, 101).to(device)
+    lossFx = nn.CrossEntropyLoss()
+    optim = torch.optim.Adam(params=model.parameters(), lr=1e-4)
 
-    model.eval()
-    images, labels = next(iter(trainDataLoader))
-    index = random.randint(0, len(images) - 1)
-    img = images[index].unsqueeze(0)
-    print(model(img))
+    for trial in range(10):
+        print("Trial {}: ".format(trial + 1), end='')
+        trainStep(model, trainDataLoader, lossFx, optim, accuracy, device)
+
+    testStep(model, testDataLoader, lossFx, optim, accuracy, device)
+    torch.save(model.state_dict(), 'model.pth')
 
 if __name__ == '__main__':
     main()
