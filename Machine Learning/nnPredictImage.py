@@ -5,6 +5,7 @@ from PIL import Image
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ## model = CNNModel(3, 10, hidden_units=10).to(device) # change per file
+## classMappings = # change per file
 
 def prepareImage(imagePath):
     transform = transforms.Compose([
@@ -23,14 +24,20 @@ def visualizeImage(tensor):
     plt.axis('off')
     plt.show()
 
-def modelEvaluate(model):
+def modelEvaluate(model, topK):
     model.eval()
     model.to(device)
-    output = model(tensor)
 
     with torch.no_grad():
-        _, predicted = torch.max(output, 1)
-        print('I predict: {}'.format(classMappings[predicted]))
+        output = model(tensor) # [1, output] format
+        probs = nn.functional.softmax(output, dim=1).squeeze()
+
+        indicies = torch.argsort(probs, descending=True)
+        # indicies output ex.: tensor([6, 3, 7, 5, 4, 9, 2, 0, 1, 8])
+
+        for i in range(topK):
+          index = indicies[i].item() # gets mapping and probs for indicies[i -> topK]
+          print('{}: {:5f}'.format(classMappings[index], probs[index].item()))
 
 model.load_state_dict(torch.load(input('What is the model path? ')))
 tensor = prepareImage(input('What is the image path? '))
