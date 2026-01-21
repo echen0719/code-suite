@@ -7,11 +7,26 @@ import torchvision
 from torchvision import transforms
 from torchvision.models import segmentation
 
+import requests
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def requestImages():
+    urls = ['https://learnopencv.com/wp-content/uploads/2022/10/bird.jpg', 'https://www.learnopencv.com/wp-content/uploads/2021/01/horse-segmentation.jpeg', 'https://www.learnopencv.com/wp-content/uploads/2021/01/person-segmentation.jpeg']
+    fileNames = ['boiidkifoundthisonline', 'lookatthisunicorn', 'amaybehappyfamily']
+
+    for i in range(len(urls)):
+        request = requests.get(urls[i])
+
+        if request.status_code == 200:
+            with open('data/{}'.format(fileNames[i]), 'wb') as file:
+                file.write(request.content)
+                print('Got {}'.format(fileNames[i]))
+        else:
+            print('Check it out yourself')
 
 def plotRGB(rgb):
     plt.imshow(rgb)
@@ -39,6 +54,7 @@ def main(imagePath):
     plotRGB(decodeSegmap(output, 21))
 
 if __name__ == '__main__':
-    main('data/boiidkifoundthisonline.jpg')
-    main('data/lookatthisunicorn.jpeg')
-    main('data/amaybehappyfamily.jpeg')
+    requestImages()
+    main('data/boiidkifoundthisonline')
+    main('data/lookatthisunicorn')
+    main('data/amaybehappyfamily')
