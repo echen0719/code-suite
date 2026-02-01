@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 void funnyMsg(int n) {
-    for(int i = 1; i <= n; i++) {
+    for (int i = 1; i <= n; i++) {
         printf("I pissed my pants %d time(s).\n", i);
     }
     
