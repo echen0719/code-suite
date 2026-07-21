@@ -2,7 +2,6 @@ import os
 import struct
 import time
 import math
-import psutil
 
 class MemoryReader:
     def __init__(self, pid):
@@ -12,6 +11,7 @@ class MemoryReader:
 
         self.staticRVA = 0x035F4968
         self.offsets = [0xB8, 0x10, 0x3B0]
+
         self.positionListOffset = 0x78
         self.arrayDataStart = 0x20
         self.vector3Length = 0x0C
@@ -27,14 +27,17 @@ class MemoryReader:
         except Exception:
             return None
 
+    # convert 4 bytes to float
     def readFloat(self, address):
         data = self.read(address, 4)
         return struct.unpack('<f', data)[0] if data else 0.0
 
+    # convert 4 bytes to int
     def readInt(self, address):
         data = self.read(address, 4)
         return struct.unpack('<i', data)[0] if data else 0
 
+    # convert 8 bytes to 64-bit pointer
     def readPointer(self, address):
         data = self.read(address, 8)
         return struct.unpack('<Q', data)[0] if data else 0
@@ -95,7 +98,9 @@ class MemoryReader:
             if currentTime - self.slotHistory[i]['lastMoveTime'] > self.timeout:
                 continue
 
-            activePlayers.append({'id': i, 'x': x, 'y': y, 'z': z})
+            activePlayers.append({
+                'id': i, 'x': x, 'y': y, 'z': z
+            })
         return activePlayers
 
     def getCameraInfo(self):
@@ -114,17 +119,14 @@ class MemoryReader:
         roll = self.readFloat(CGameStatePointer + 0x2C)
 
         return {
-            'position': (cameraX, cameraY, cameraZ),
+            'x': cameraX, 'y': cameraY, 'z': cameraZ,
             'pitch': math.radians(pitch),
             'yaw': math.radians(yaw),
             "roll": math.radians(roll)
         }
 
     def close(self):
-    self.memoryFile.close()
-
-def getTargetPID(target_name):
-    for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['name'] == target_name:
-            return proc.info['pid']
-    return None
+        try:
+            self.memoryFile.close()
+        except Exception:
+            pass
