@@ -2,6 +2,7 @@ import os
 import struct
 import time
 import math
+from offsets import values
 
 class MemoryReader:
     def __init__(self, pid):
@@ -9,12 +10,16 @@ class MemoryReader:
         self.memoryFile = open(f"/proc/{pid}/mem", "rb")
         self.baseAddress = self.getBase()
 
-        self.staticRVA = 0x035F4968
-        self.offsets = [0xB8, 0x10, 0x3B0]
+        self.staticRVA = values['staticRVA']
+        self.offsets = values['offsets']
 
-        self.positionListOffset = 0x78
-        self.arrayDataStart = 0x20
-        self.vector3Length = 0x0C
+        self.positionOffset = values['positionOffset']
+        self.arrayDataStart = values['arrayDataStartOffset']
+        self.cameraPositionOffset = values['cameraPositionOffset']
+        self.cameraOrientationOffset = values['cameraOrientationOffset']
+
+        self.arrayDataLengthOffset = values['arrayDataLengthOffset']
+        self.vector3Length = 0xC # 12 bytes
 
         self.slotHistory = {}
         self.threshold = 0.5 # meters
@@ -66,11 +71,11 @@ class MemoryReader:
         if CGameStatePointer == 0:
             return []
 
-        positionsList = self.readPointer(CGameStatePointer + self.positionListOffset)
+        positionsList = self.readPointer(CGameStatePointer + self.positionOffset)
         if positionsList == 0:
             return []
 
-        positionsListLength = self.readInt(positionsList + 0x18)
+        positionsListLength = self.readInt(positionsList + self.arrayDataLengthOffset)
         currentTime = time.time()
         activePlayers = []
 
@@ -112,14 +117,26 @@ class MemoryReader:
             return []
 
         # viewPos - 0x18
-        cameraX = self.readFloat(CGameStatePointer + 0x18)
-        cameraY = self.readFloat(CGameStatePointer + 0x1C)
-        cameraZ = self.readFloat(CGameStatePointer + 0x20)
+        cameraPositionDataAddress = CGameStatePointer + self.cameraPositionOffset
+        cameraCoordinates = self.read(cameraPositionDataAddress, 12)
 
-        # viewOrient - 0x18 (Euler angles)
-        pitch = self.readFloat(CGameStatePointer + 0x24)
-        yaw = self.readFloat(CGameStatePointer + 0x28)
-        roll = self.readFloat(CGameStatePointer + 0x2C)
+        if not cameraCoordinates or len(cameraCoordinates) < 12:
+            return []
+
+        cameraX, cameraY, cameraZ = struct.unpack('<fff', cameraCoordinates)
+        if cameraX == 0.0 and cameraY == 0.0 and cameraZ == 0.0:
+            return []
+
+        # viewOrient - 0x24 (Euler angles)
+        cameraOrientationDataAddress = CGameStatePointer + self.cameraOrientationOffset
+        cameraOrientations = self.read(cameraOrientationDataAddress, 12)
+
+        if not cameraOrientations or len(cameraOrientations) < 12:
+            return []
+
+        pitch, yaw, roll = struct.unpack('<fff', cameraOrientations)
+        if pitch == 0.0 and yaw == 0.0 and roll == 0.0:
+            return []
 
         return {
             'x': cameraX, 'y': cameraY, 'z': cameraZ,
