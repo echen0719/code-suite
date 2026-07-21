@@ -76,10 +76,13 @@ class MemoryReader:
 
         for i in range(min(positionsListLength, 64)):
             dataAddress = positionsList + self.arrayDataStart + (i * self.vector3Length)
-            x = self.readFloat(dataAddress)
-            y = self.readFloat(dataAddress + 0x04)
-            z = self.readFloat(dataAddress + 0x08)
 
+            coordinates = self.read(dataAddress, 12)
+            # read 12 bytes then unpack
+            if not coordinates or len(coordinates) < 12:
+                continue
+
+            x, y, z = struct.unpack('<fff', coordinates)
             if x == 0.0 and y == 0.0 and z == 0.0:
                 continue # empty values = no memory there
 
