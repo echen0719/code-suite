@@ -4,6 +4,7 @@ import psutil
 def getTargetPID(targetName):
     for proc in psutil.process_iter(['pid', 'name']):
         if proc.info['name'] == targetName:
+            print("PID: {}".format(proc.info['pid']))
             return proc.info['pid']
     return None
 
@@ -14,14 +15,14 @@ def getTargetPID(targetName):
 '''
 
 # Unity = Left-handed, Y-up, Z-forward
-def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=90.0):
+def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=60.0):
     vectorX = playerPosition['x'] - cameraInfo['x']
     vectorY = playerPosition['y'] - cameraInfo['y']
     vectorZ = playerPosition['z'] - cameraInfo['z']
 
-    pitch = -cameraInfo['pitch']
-    yaw = -cameraInfo['yaw']
-    roll = -cameraInfo['roll']
+    pitch = cameraInfo['pitch']
+    yaw = cameraInfo['yaw']
+    roll = cameraInfo['roll']
 
     # y, rotate yaw --> pitch and roll calc
     sinYaw = math.sin(-yaw)

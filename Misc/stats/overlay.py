@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPainter, QPen, QBrush, QColor
+from PyQt6.QtCore import Qt, QTimer, QRectF
+from PyQt6.QtGui import QPainter, QPen, QColor
 
 from reader import MemoryReader
 from utils import getTargetPID, worldToScreen
@@ -43,7 +43,7 @@ class Overlay(QWidget):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.updateFrame)
-        self.timer.start(int(1 / FPS))
+        self.timer.start(int(1000 / FPS))
 
         self.playerDraws = []
 
@@ -57,26 +57,44 @@ class Overlay(QWidget):
             return
 
         self.playerDraws = []
-        for player in players:
-            screenCoordinates = worldToScreen(playerPosition, cameraInfo, self.screen_width, self.screen_height, fov=90.0)
+        for playerPosition in players:
+            screenCoordinates = worldToScreen(playerPosition, cameraInfo, self.width, self.height, fov=90.0)
 
             if screenCoordinates:
                 x, y, depth = screenCoordinates
 
-                if -100 < x < self.width + 100 or -100 < y < self.height + 100: # make sure player is visible on screen
+                if -100 < x < self.width + 100 and -100 < y < self.height + 100: # make sure player is visible on screen
                     self.playerDraws.append({'x': x, 'y': y, 'depth': depth})
         self.update()
 
     def paintEvent(self, event):
+        if not self.playerDraws:
+            return
+
         painter = QPainter(self)
-        painter.setBrush(QBrush(QColor(255, 255, 255, 20)))
-        painter.drawRect(0, 0, self.width, self.height)
+        pen = QPen(QColor(0, 255, 0, 200))
+        pen.setWidth(2)
+        painter.setPen(pen)
+
+        for player in self.playerDraws:
+            # reference for game meters to pixels
+            boxHeight = max(20.0, 150.0 * (5.0 / (player['depth'] + 1.0)))
+            boxWidth = boxHeight * 0.4
+
+            topLeftX = player['x'] - (boxWidth / 2.0)
+            topLeftY = player['y'] - boxHeight
+
+            painter.drawRect(QRectF(topLeftX, topLeftY, boxWidth, boxHeight))
+        painter.end()
 
 def main():
-    app = QApplication(sys.argv) # pass in environmental variables
-    overlay = Overlay(getTargetPID(""))
-    overlay.show()
-    sys.exit(app.exec())
+    if len(sys.argv) > 1:
+        app = QApplication(sys.argv) # pass in environmental variables
+        overlay = Overlay(getTargetPID(sys.argv[1]))
+        overlay.show()
+        sys.exit(app.exec())
+    else:
+        print("Add an argument when executing")
 
 if __name__ == "__main__":
     main()
