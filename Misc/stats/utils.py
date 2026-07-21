@@ -19,15 +19,15 @@ def worldToScreen(playerPosition, cameraPosition, pitch, yaw, roll, screenWidth,
     vectorZ = playerPosition['z'] - cameraPosition['z']
 
     # angles are negated since if player turns right, the world turns left and vice versa
-    pitch = math.radians(-pitch) # x
+    pitch = -pitch # x
     sinPitch = math.sin(pitch)
     cosPitch = math.cos(pitch)
 
-    yaw = math.radians(-yaw) # y
+    yaw = -yaw # y
     sinYaw = math.sin(yaw)
     cosYaw = math.cos(yaw)
 
-    roll = math.radians(-roll) # z
+    roll = -roll # z
     sinRoll = math.sin(roll)
     cosRoll = math.cos(roll)
 

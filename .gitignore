@@ -3,3 +3,4 @@ Machine Learning/data/*
 !Machine Learning/data/pandasDataGen.py
 
 Machine Learning/__pycache__/
+*.pyc
