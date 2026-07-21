@@ -2,121 +2,127 @@ import os
 import struct
 import time
 import math
+import psutil
 
 class MemoryReader:
     def __init__(self, pid):
         self.pid = pid
-        self.mem_file = open(f"/proc/{pid}/mem", "rb")
+        self.memoryFile = open(f"/proc/{pid}/mem", "rb")
 
     def read(self, address, size):
         try:
-            self.mem_file.seek(address)
-            return self.mem_file.read(size)
+            self.memoryFile.seek(address)
+            return self.memoryFile.read(size)
         except Exception:
             return None
 
-    def read_float(self, address):
+    def readFloat(self, address):
         data = self.read(address, 4)
         return struct.unpack('<f', data)[0] if data else 0.0
 
-    def read_int(self, address):
+    def readInt(self, address):
         data = self.read(address, 4)
         return struct.unpack('<i', data)[0] if data else 0
 
-    def read_pointer(self, address):
+    def readPointer(self, address):
         data = self.read(address, 8)
         return struct.unpack('<Q', data)[0] if data else 0
 
-def get_base_address(pid, module_name="GameAssembly.so"):
+def getBase(pid, module="GameAssembly.so"):
     try:
-        with open(f"/proc/{pid}/maps", "r") as f:
-            for line in f:
-                if module_name in line:
+        with open(f"/proc/{pid}/maps", "r") as binary:
+            for line in binary:
+                if module in line:
                     return int(line.split("-")[0], 16)
-    except: pass
+    except:
+        pass
     return 0
 
-def resolve_pointer_chain(reader, base_addr, static_rva, offsets):
+def resolvePointerChain(reader, baseAddress, staticRVA, offsets):
     try:
-        ptr = reader.read_pointer(base_addr + static_rva)
+        pointer = reader.readPointer(baseAddress + staticRVA)
         for offset in offsets:
-            ptr = reader.read_pointer(ptr + offset)
-        return ptr
-    except: return 0
+            pointer = reader.readPointer(pointer + offset)
+        return pointer
+    except:
+        return 0
 
-def main():
-    pid = 20018
-    STATIC_RVA = 0x03735438
-    POINTER_OFFSETS = [0x80, 0x550, 0x3B0]
-    POS_LIST_OFFSET = 0x78
-    ARRAY_DATA_START = 0x20
-    VECTOR3_STRIDE = 0x0C
+def main(pid, speed):
+    staticRVA = 0x035F4968
+    offsets = [0xB8, 0x10, 0x3B0]
+    positionListOffset = 0x78
+    arrayDataStart = 0x20
+    vector3Length = 0x0C
 
     reader = MemoryReader(pid)
-    base_addr = get_base_address(pid)
+    baseAddress = getBase(pid)
 
-    slot_history = {}
-    MOVE_THRESHOLD = 0.5
-    GHOST_TIMEOUT = 3.0
+    slotHistory = {}
+    threshold = 0.5 # meters
+    timeout = 3.0 # when is declared a ghost
 
     print(f"[*] Monitoring started for PID {pid}...")
 
     try:
         while True:
-            cgamestate_ptr = resolve_pointer_chain(reader, base_addr, STATIC_RVA, POINTER_OFFSETS)
+            CGameStatePointer = resolvePointerChain(reader, baseAddress, staticRVA, offsets)
 
-            if cgamestate_ptr == 0:
+            if CGameStatePointer == 0:
                 print("[!] Waiting for valid game state...", end="\r")
                 time.sleep(1)
                 continue
 
-            pos_list_array = reader.read_pointer(cgamestate_ptr + POS_LIST_OFFSET)
-            if pos_list_array == 0:
+            positionsList = reader.readPointer(CGameStatePointer + positionListOffset)
+            if positionsList == 0:
                 time.sleep(0.5)
                 continue
 
-            array_length = reader.read_int(pos_list_array + 0x18)
+            positionsListLength = reader.readInt(positionsList + 0x18)
 
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print(f"--- Live Player Positions (Base: {hex(base_addr)}) ---")
+            os.system('cls' if os.name == 'nt' else 'clear') # for live updating
+            print("--- Live Player Positions (Base: {}) ---".format(hex(baseAddress)))
 
-            current_time = time.time()
-            active_players = 0
+            currentTime = time.time()
+            playerCount = 0
 
-            for i in range(min(array_length, 64)):
-                base_data_addr = pos_list_array + ARRAY_DATA_START + (i * VECTOR3_STRIDE)
-                x = reader.read_float(base_data_addr)
-                y = reader.read_float(base_data_addr + 0x04)
-                z = reader.read_float(base_data_addr + 0x08)
+            for i in range(min(positionsListLength, 64)):
+                dataAddress = positionsList + arrayDataStart + (i * vector3Length)
+                x = reader.readFloat(dataAddress)
+                y = reader.readFloat(dataAddress + 0x04)
+                z = reader.readFloat(dataAddress + 0x08)
 
                 if x == 0.0 and y == 0.0 and z == 0.0:
+                    continue # empty values = no memory there
+
+                currentPosition = (x, y, z)
+
+                if i not in slotHistory:
+                    slotHistory[i] = {'position': currentPosition, 'lastMoveTime': currentTime}
+
+                lastPosition = slotHistory[i]['position']
+                distance = math.sqrt((x - lastPosition[0])**2 + (y - lastPosition[1])**2 + (z - lastPosition[2])**2) # literally just the 3D distance formula
+
+                if distance > threshold:
+                    slotHistory[i]['lastMoveTime'] = currentTime
+                    slotHistory[i]['position'] = currentPosition
+
+                if currentTime - slotHistory[i]['lastMoveTime'] > timeout:
                     continue
 
-                current_pos = (x, y, z)
+                print("{:02d} | X: {:8.2f} | Y: {:8.2f} | Z: {:8.2f}".format(i, x, y, z))
+                playerCount += 1
 
-                if i not in slot_history:
-                    slot_history[i] = {'pos': current_pos, 'last_move_time': current_time}
-
-                last_pos = slot_history[i]['pos']
-                dist = math.sqrt((x - last_pos[0])**2 + (y - last_pos[1])**2 + (z - last_pos[2])**2)
-
-                if dist > MOVE_THRESHOLD:
-                    slot_history[i]['last_move_time'] = current_time
-                    slot_history[i]['pos'] = current_pos
-
-                if current_time - slot_history[i]['last_move_time'] > GHOST_TIMEOUT:
-                    continue
-
-                print(f"{i:02d} | X: {x:8.2f} | Y: {y:8.2f} | Z: {z:8.2f}")
-                active_players += 1
-
-            print(f"\n[*] Active moving players: {active_players}")
-            time.sleep(0.1)
+            print("\n[*] Active moving players: {}".format(playerCount))
+            time.sleep(1/speed)
 
     except KeyboardInterrupt:
         print("\n[*] Stopped.")
     finally:
-        reader.mem_file.close()
+        reader.memoryFile.close()
 
 if __name__ == "__main__":
-    main()
+    target = ""
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] == target:
+            targetPID = proc.info['pid']
+    main(pid=targetPID, speed=165)
