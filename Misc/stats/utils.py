@@ -1,9 +1,9 @@
 import math
 import psutil
 
-def getTargetPID(target_name):
+def getTargetPID(targetName):
     for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['name'] == target_name:
+        if proc.info['name'] == targetName:
             return proc.info['pid']
     return None
 

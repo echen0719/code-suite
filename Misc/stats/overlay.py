@@ -74,7 +74,7 @@ class Overlay(QWidget):
 
 def main():
     app = QApplication(sys.argv) # pass in environmental variables
-    overlay = Overlay(1141)
+    overlay = Overlay(getTargetPID(""))
     overlay.show()
     sys.exit(app.exec())
 
