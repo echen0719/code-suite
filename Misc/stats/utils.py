@@ -14,10 +14,14 @@ def getTargetPID(target_name):
 '''
 
 # Unity = Left-handed, Y-up, Z-forward
-def worldToScreen(playerPosition, cameraPosition, pitch, yaw, roll, screenWidth, screenHeight, fov=90.0):
-    vectorX = playerPosition['x'] - cameraPosition['x']
-    vectorY = playerPosition['y'] - cameraPosition['y']
-    vectorZ = playerPosition['z'] - cameraPosition['z']
+def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=90.0):
+    vectorX = playerPosition['x'] - cameraInfo['x']
+    vectorY = playerPosition['y'] - cameraInfo['y']
+    vectorZ = playerPosition['z'] - cameraInfo['z']
+
+    pitch = -cameraInfo['pitch']
+    yaw = -cameraInfo['yaw']
+    roll = -cameraInfo['roll']
 
     # y, rotate yaw --> pitch and roll calc
     sinYaw = math.sin(-yaw)
