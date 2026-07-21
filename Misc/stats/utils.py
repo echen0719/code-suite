@@ -14,38 +14,42 @@ def getTargetPID(target_name):
 '''
 
 # Unity = Left-handed, Y-up, Z-forward
-def worldToScreen(playerPosition, cameraPosition, pitch, yaw, roll, screenWidth, screenHeight, fov=60.0):
+def worldToScreen(playerPosition, cameraPosition, pitch, yaw, roll, screenWidth, screenHeight, fov=90.0):
     vectorX = playerPosition['x'] - cameraPosition['x']
     vectorY = playerPosition['y'] - cameraPosition['y']
     vectorZ = playerPosition['z'] - cameraPosition['z']
 
-    # x
-    sinPitch = math.sin(pitch)
-    cosPitch = math.cos(pitch)
+    # y, rotate yaw --> pitch and roll calc
+    sinYaw = math.sin(-yaw)
+    cosYaw = math.cos(-yaw)
 
-    # y
-    sinYaw = math.sin(yaw)
-    cosYaw = math.cos(yaw)
-
-    # rotate yaw --> pitch and roll calc
     x1 = vectorX * cosYaw + vectorZ * sinYaw
+    y1 = vectorY
     z1 = -vectorX * sinYaw + vectorZ * cosYaw
 
-    # rotate pitch --> yaw and roll calc
-    y2 = vectorY * cosPitch - z1 * sinPitch
-    z2 = vectorY * sinPitch + z1 * cosPitch
+    # x, rotate pitch --> yaw and roll calc
+    sinPitch = math.sin(-pitch)
+    cosPitch = math.cos(-pitch)
 
-    # rotate roll --> pitch and yaw calc
-    x3 = x1 * math.cos(roll) - y2 * math.sin(roll)
-    y3 = x1 * math.sin(roll) + y2 * math.cos(roll)
+    x2 = x1
+    y2 = y1 * cosPitch - z1 * sinPitch
+    z2 = y1 * sinPitch + z1 * cosPitch
+
+    # z, rotate roll --> pitch and yaw calc
+    sinRoll = math.sin(-roll)
+    cosRoll = math.cos(-roll)
+
+    x3 = x2 * cosRoll - y2 * sinRoll
+    y3 = x2 * sinRoll + y2 * cosRoll
+    z3 = z2
 
     # z=depth which is how far something is far from the camera
-    if z2 <= 0:
+    if z3 <= 0:
         return None
 
     # POV draw a triangle
     focal = (screenWidth / 2.0) / math.tan(math.radians(fov) / 2.0)
-    screenX = screenWidth / 2.0 + (x3 * focal) / z2
-    screenY = screenHeight / 2.0 - (y3 * focal) / z2
+    screenX = screenWidth / 2.0 + (x3 * focal) / z3
+    screenY = screenHeight / 2.0 - (y3 * focal) / z3
 
-    return screenX, screenY, z2 # return pixel and depth
+    return screenX, screenY, z3 # return pixel and depth

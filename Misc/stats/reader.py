@@ -2,7 +2,7 @@ import os
 import struct
 import time
 import math
-from offsets import values
+from values import values
 
 class MemoryReader:
     def __init__(self, pid):
