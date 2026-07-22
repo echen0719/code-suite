@@ -7,7 +7,7 @@ from values import values
 class MemoryReader:
     def __init__(self, pid):
         self.pid = pid
-        self.memoryFile = open(f"/proc/{pid}/mem", "rb")
+        self.memoryFile = os.open(f"/proc/{pid}/mem", os.O_RDONLY)
         self.baseAddress = self.getBase()
 
         self.staticRVA = values['staticRVA']
@@ -15,20 +15,21 @@ class MemoryReader:
 
         self.positionOffset = values['positionOffset']
         self.arrayDataStart = values['arrayDataStartOffset']
+        self.arrayDataLengthOffset = values['arrayDataLengthOffset']
+
         self.cameraPositionOffset = values['cameraPositionOffset']
         self.cameraOrientationOffset = values['cameraOrientationOffset']
 
-        self.arrayDataLengthOffset = values['arrayDataLengthOffset']
+        self.maxPlayerCount = 64
         self.vector3Length = 0xC # 12 bytes
 
         self.slotHistory = {}
-        self.threshold = 0.5 # meters
+        self.thresholdSQR = 0.25 # meters
         self.timeout = 3.0 # when is declared a ghost
 
     def read(self, address, size):
         try:
-            self.memoryFile.seek(address)
-            return self.memoryFile.read(size)
+            return os.pread(self.memoryFile, size, address)
         except Exception:
             return None
 
@@ -57,37 +58,33 @@ class MemoryReader:
             pass
         return 0
 
-    def resolvePointerChain(self, baseAddress, staticRVA, offsets):
+    def resolvePointerChain(self):
         try:
-            pointer = self.readPointer(baseAddress + staticRVA)
-            for offset in offsets:
+            pointer = self.readPointer(self.baseAddress + self.staticRVA)
+            for offset in self.offsets:
                 pointer = self.readPointer(pointer + offset)
             return pointer
         except:
             return 0
 
     def getPlayers(self):
-        CGameStatePointer = self.resolvePointerChain(self.baseAddress, self.staticRVA, self.offsets)
-        if CGameStatePointer == 0:
-            return []
+        CGameStatePointer = self.resolvePointerChain()
+        if not CGameStatePointer: return []
 
         positionsList = self.readPointer(CGameStatePointer + self.positionOffset)
-        if positionsList == 0:
-            return []
+        if not positionsList: return []
 
-        positionsListLength = self.readInt(positionsList + self.arrayDataLengthOffset)
+        # 64 max players all the time
+        coordinates = self.read(positionsList + self.arrayDataStart, self.maxPlayerCount * self.vector3Length)
+        if not coordinates or len(coordinates) < self.maxPlayerCount * self.vector3Length: return []
+
+        floats = struct.unpack('<{}f'.format(self.maxPlayerCount * 3), coordinates)
+
         currentTime = time.time()
         activePlayers = []
 
-        for i in range(min(positionsListLength, 64)):
-            dataAddress = positionsList + self.arrayDataStart + (i * self.vector3Length)
-
-            coordinates = self.read(dataAddress, 12)
-            # read 12 bytes then unpack
-            if not coordinates or len(coordinates) < 12:
-                continue
-
-            x, y, z = struct.unpack('<fff', coordinates)
+        for i in range(self.maxPlayerCount):
+            x, y, z = floats[i * 3], floats[i * 3 + 1], floats[i * 3 + 2]
             if x == 0.0 and y == 0.0 and z == 0.0:
                 continue # empty values = no memory there
 
@@ -97,46 +94,36 @@ class MemoryReader:
                 self.slotHistory[i] = {'position': currentPosition, 'lastMoveTime': currentTime}
 
             lastPosition = self.slotHistory[i]['position']
-            distance = math.sqrt((x - lastPosition[0])**2 + (y - lastPosition[1])**2 + (z - lastPosition[2])**2) # literally just the 3D distance formula
+            distanceSQR = (x - lastPosition[0])**2 + (y - lastPosition[1])**2 + (z - lastPosition[2])**2 # literally just the 3D distance formula
 
-            if distance > self.threshold:
+            if distanceSQR > self.thresholdSQR:
                 self.slotHistory[i]['lastMoveTime'] = currentTime
                 self.slotHistory[i]['position'] = currentPosition
 
             if currentTime - self.slotHistory[i]['lastMoveTime'] > self.timeout:
                 continue
 
-            activePlayers.append({
-                'id': i, 'x': x, 'y': y, 'z': z
-            })
+            activePlayers.append({'id': i, 'x': x, 'y': y, 'z': z})
+
         return activePlayers
 
     def getCameraInfo(self):
-        CGameStatePointer = self.resolvePointerChain(self.baseAddress, self.staticRVA, self.offsets)
-        if CGameStatePointer == 0:
-            return []
+        CGameStatePointer = self.resolvePointerChain()
+        if not CGameStatePointer: return None
 
-        # viewPos - 0x18
-        cameraPositionDataAddress = CGameStatePointer + self.cameraPositionOffset
-        cameraCoordinates = self.read(cameraPositionDataAddress, 12)
+        # viewPos - 0x18, viewOrient - 0x24, viewOrient end = 0x30, 0x30 - 0x24 = 24
+        cameraCoordinates = self.read(CGameStatePointer + self.cameraPositionOffset, self.vector3Length)
+        cameraOrientation = self.read(CGameStatePointer + self.cameraOrientationOffset, self.vector3Length)
 
-        if not cameraCoordinates or len(cameraCoordinates) < 12:
-            return []
+        if not cameraCoordinates or not cameraOrientation: return None
 
         cameraX, cameraY, cameraZ = struct.unpack('<fff', cameraCoordinates)
+        pitch, yaw, roll = struct.unpack('<fff', cameraOrientation)
+
         if cameraX == 0.0 and cameraY == 0.0 and cameraZ == 0.0:
-            return []
-
-        # viewOrient - 0x24 (Euler angles)
-        cameraOrientationDataAddress = CGameStatePointer + self.cameraOrientationOffset
-        cameraOrientations = self.read(cameraOrientationDataAddress, 12)
-
-        if not cameraOrientations or len(cameraOrientations) < 12:
-            return []
-
-        pitch, yaw, roll = struct.unpack('<fff', cameraOrientations)
+            return None
         if pitch == 0.0 and yaw == 0.0 and roll == 0.0:
-            return []
+            return None
 
         return {
             'x': cameraX, 'y': cameraY, 'z': cameraZ,
