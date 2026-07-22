@@ -1,16 +1,38 @@
 import sys
+import time
 from PyQt6.QtWidgets import QApplication, QWidget
-from PyQt6.QtCore import Qt, QTimer, QRectF
+from PyQt6.QtCore import Qt, QTimer, QRectF, QThread, pyqtSignal
 from PyQt6.QtGui import QPainter, QPen, QColor
 
 from reader import MemoryReader
 from utils import getTargetPID, worldToScreen
 
+# separate thread for performance and safety
+class ReaderThread(QThread):
+    dataSend = pyqtSignal(list, dict)
+
+    def __init__(self, reader):
+        super().__init__()
+        self.reader = reader
+        self.running = True
+        self.FPS = 165
+
+    def run(self):
+        while self.running:
+            players = self.reader.getPlayers()
+            camera = self.reader.getCameraInfo()
+
+            self.dataSend.emit(players, camera)
+            time.sleep(1 / self.FPS)
+
+    def stop(self):
+        self.running = False
+        self.wait()
+
 class Overlay(QWidget):
     def __init__(self, pid):
         super().__init__()
         fullscreen = True
-        FPS = 165
 
         # prevent from interferring
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -40,35 +62,20 @@ class Overlay(QWidget):
         self.move(0, 0)
 
         self.reader = MemoryReader(pid)
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.updateFrame)
-        self.timer.start(int(1000 / FPS))
-
         self.playerDraws = []
+        self.cameraInfo = None
 
-    def updateFrame(self):
-        players = self.reader.getPlayers()
+        self.thread = ReaderThread(self.reader)
+        self.thread.dataSend.connect(self.onData)
+        self.thread.start()
 
-        cameraInfo = self.reader.getCameraInfo()
-        if not cameraInfo:
-            self.playerDraws = []
-            self.update()
-            return
-
-        self.playerDraws = []
-        for playerPosition in players:
-            screenCoordinates = worldToScreen(playerPosition, cameraInfo, self.width, self.height, fov=90.0)
-
-            if screenCoordinates:
-                x, y, depth = screenCoordinates
-
-                if -100 < x < self.width + 100 and -100 < y < self.height + 100: # make sure player is visible on screen
-                    self.playerDraws.append({'x': x, 'y': y, 'depth': depth})
+    def onData(self, playerDraws, cameraInfo):
+        self.playerDraws = playerDraws
+        self.cameraInfo = cameraInfo
         self.update()
 
     def paintEvent(self, event):
-        if not self.playerDraws:
+        if not self.playerDraws or not self.cameraInfo:
             return
 
         painter = QPainter(self)
@@ -77,15 +84,26 @@ class Overlay(QWidget):
         painter.setPen(pen)
 
         for player in self.playerDraws:
-            # reference for game meters to pixels
-            boxHeight = max(20.0, 150.0 * (5.0 / (player['depth'] + 1.0)))
-            boxWidth = boxHeight * 0.4
+            feetPosition = {'x': player['x'], 'y': player['y'], 'z': player['z']}
+            headPosition = {'x': player['x'], 'y': player['y'] + 2, 'z': player['z']}
 
-            topLeftX = player['x'] - (boxWidth / 2.0)
-            topLeftY = player['y'] - boxHeight
+            feetScreenLocation = worldToScreen(feetPosition, self.cameraInfo, self.width, self.height, fov=90.0)
+            headScreenLocation = worldToScreen(headPosition, self.cameraInfo, self.width, self.height, fov=90.0)
 
-            painter.drawRect(QRectF(topLeftX, topLeftY, boxWidth, boxHeight))
-        painter.end()
+            if feetScreenLocation and headScreenLocation:
+                feetX, feetY, feetDepth = feetScreenLocation
+                headX, headY, headDepth = headScreenLocation
+
+                boxHeight = feetY - headY
+                if boxHeight <= 0: continue
+
+                boxWidth = boxHeight * 0.5
+                painter.drawRect(QRectF(headX - boxWidth / 2, headY, boxWidth, boxHeight))
+
+    def closeEvent(self, event):
+        self.thread.stop()
+        self.reader.close()
+        super().closeEvent(event)
 
 def main():
     if len(sys.argv) > 1:
