@@ -1,45 +1,21 @@
 import sys
 import time
 from PyQt6.QtWidgets import QApplication, QWidget
-from PyQt6.QtCore import Qt, QTimer, QRectF, QThread, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer, QRectF
 from PyQt6.QtGui import QPainter, QPen, QColor
 
 from reader import MemoryReader
 from utils import getTargetPID, worldToScreen
 
-# separate thread for performance and safety
-class ReaderThread(QThread):
-    dataSend = pyqtSignal(list, dict)
-
-    def __init__(self, reader):
-        super().__init__()
-        self.reader = reader
-        self.running = True
-        self.FPS = 165
-
-    def run(self):
-        while self.running:
-            players = self.reader.getPlayers()
-            camera = self.reader.getCameraInfo()
-
-            self.dataSend.emit(players, camera)
-            time.sleep(1 / self.FPS)
-
-    def stop(self):
-        self.running = False
-        self.wait()
-
 class Overlay(QWidget):
     def __init__(self, pid):
         super().__init__()
         fullscreen = True
-
-        # prevent from interferring
-        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        FPS = 165
 
         # stay on top, transparent (remember to set "Keep Above Others" in Wayland)
         self.setWindowFlags(
-            Qt.WindowType.Window | Qt.WindowType.Tool |
+            Qt.WindowType.Tool |
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.WindowDoesNotAcceptFocus |
@@ -65,13 +41,13 @@ class Overlay(QWidget):
         self.playerDraws = []
         self.cameraInfo = None
 
-        self.thread = ReaderThread(self.reader)
-        self.thread.dataSend.connect(self.onData)
-        self.thread.start()
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.onData)
+        self.timer.start(int(1000 / FPS))
 
-    def onData(self, playerDraws, cameraInfo):
-        self.playerDraws = playerDraws
-        self.cameraInfo = cameraInfo
+    def onData(self):
+        self.playerDraws = self.reader.getPlayers()
+        self.cameraInfo = self.reader.getCameraInfo()
         self.update()
 
     def paintEvent(self, event):
@@ -101,7 +77,7 @@ class Overlay(QWidget):
                 painter.drawRect(QRectF(headX - boxWidth / 2, headY, boxWidth, boxHeight))
 
     def closeEvent(self, event):
-        self.thread.stop()
+        self.timer.stop()
         self.reader.close()
         super().closeEvent(event)
 
