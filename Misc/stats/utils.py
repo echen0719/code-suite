@@ -14,10 +14,25 @@ def getTargetPID(targetName):
 - scale to prespective by getting distance
 '''
 
+smoothData = {}
+
+def smoothScreenPositions(playerID, screenX, screenY, alpha=0.15):
+    if playerID not in smoothData:
+        smoothData[playerID] = (screenX, screenY)
+        return screenX, screenY
+
+    px, py = smoothData[playerID]
+
+    nx = px + alpha * (screenX - px)
+    ny = py + alpha * (screenY - py)
+
+    smoothData[playerID] = (nx, ny)
+    return nx, ny
+
 # Unity = Left-handed, Y-up, Z-forward
-def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=60.0):
+def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=90):
     vectorX = playerPosition['x'] - cameraInfo['x']
-    vectorY = playerPosition['y'] - cameraInfo['y']
+    vectorY = playerPosition['y'] - cameraInfo['y'] - 0.5
     vectorZ = playerPosition['z'] - cameraInfo['z']
 
     pitch = cameraInfo['pitch']
@@ -53,8 +68,10 @@ def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=60.
         return None
 
     # POV draw a triangle
-    focal = (screenWidth / 2.0) / math.tan(math.radians(fov) / 2.0)
-    screenX = screenWidth / 2.0 + (x3 * focal) / z3
-    screenY = screenHeight / 2.0 - (y3 * focal) / z3
+    focalY = (screenHeight / 2.0) / math.tan(math.radians(fov) / 2.0)
+    focalX = focalY * (screenWidth / screenHeight)
+
+    screenX = screenWidth / 2.0 + (x3 * focalX) / z3
+    screenY = screenHeight / 2.0 - (y3 * focalY) / z3
 
     return screenX, screenY, z3 # return pixel and depth
