@@ -2,7 +2,7 @@ import os
 import struct
 import time
 import math
-from values import values
+from values import positionValues, healthValues
 
 class MemoryReader:
     def __init__(self, pid):
@@ -10,15 +10,21 @@ class MemoryReader:
         self.memoryFile = os.open(f"/proc/{pid}/mem", os.O_RDONLY)
         self.baseAddress = self.getBase()
 
-        self.staticRVA = values['staticRVA']
-        self.offsets = values['offsets']
+        self.positionStaticRVA = positionValues['staticRVA']
+        self.positionOffsets = positionValues['offsets']
+        self.positionOffset = positionValues['positionOffset']
 
-        self.positionOffset = values['positionOffset']
-        self.arrayDataStart = values['arrayDataStartOffset']
-        self.arrayDataLengthOffset = values['arrayDataLengthOffset']
+        self.arrayDataStart = positionValues['arrayDataStartOffset']
+        self.arrayDataLengthOffset = positionValues['arrayDataLengthOffset']
 
-        self.cameraPositionOffset = values['cameraPositionOffset']
-        self.cameraOrientationOffset = values['cameraOrientationOffset']
+        self.healthStaticRVA = healthValues['staticRVA']
+        self.healthOffsets = healthValues['offsets']
+
+        self.healthArrayDataStart = healthValues['arrayDataStartOffset']
+        self.healthArrayLengthOffset = healthValues['arrayDataLengthOffset']
+
+        self.cameraPositionOffset = positionValues['cameraPositionOffset']
+        self.cameraOrientationOffset = positionValues['cameraOrientationOffset']
 
         self.maxPlayerCount = 64
         self.vector3Length = 0xC # 12 bytes
@@ -58,17 +64,24 @@ class MemoryReader:
             pass
         return 0
 
-    def resolvePointerChain(self):
+    def resolvePointerChain(self, method):
         try:
-            pointer = self.readPointer(self.baseAddress + self.staticRVA)
-            for offset in self.offsets:
+            if method == "position":
+                staticRVA = self.positionStaticRVA
+                offsets = self.positionOffsets
+            elif method == "health":
+                staticRVA = self.healthStaticRVA
+                offsets = self.healthOffsets
+
+            pointer = self.readPointer(self.baseAddress + staticRVA)
+            for offset in offsets:
                 pointer = self.readPointer(pointer + offset)
             return pointer
         except:
             return 0
 
     def getPlayers(self):
-        CGameStatePointer = self.resolvePointerChain()
+        CGameStatePointer = self.resolvePointerChain("position")
         if not CGameStatePointer: return []
 
         positionsList = self.readPointer(CGameStatePointer + self.positionOffset)
@@ -107,8 +120,24 @@ class MemoryReader:
 
         return activePlayers
 
+    def getHealth(self):
+        CGameStatePointer = self.resolvePointerChain("health")
+        if not CGameStatePointer: return []
+
+        healthData = self.read(CGameStatePointer + self.healthArrayDataStart, self.maxPlayerCount * 4)
+        if not healthData: return []
+
+        healthList = struct.unpack("<{}f".format(self.maxPlayerCount), healthData)
+        playersHealth = []
+
+        for i, health in enumerate(healthList):
+            if health <= 0: continue
+            playersHealth.append({'id': i, 'health': health})
+
+        return playersHealth
+
     def getCameraInfo(self):
-        CGameStatePointer = self.resolvePointerChain()
+        CGameStatePointer = self.resolvePointerChain("position")
         if not CGameStatePointer: return None
 
         # viewPos - 0x18, viewOrient - 0x24, viewOrient end = 0x30, 0x30 - 0x24 = 24
