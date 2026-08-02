@@ -14,25 +14,97 @@ def getTargetPID(targetName):
 - scale to prespective by getting distance
 '''
 
-smoothData = {}
+position3DHistory = {}
 
-def smoothScreenPositions(playerID, screenX, screenY, alpha=0.15):
-    if playerID not in smoothData:
-        smoothData[playerID] = (screenX, screenY)
-        return screenX, screenY
+# 100ms seems resonable
+def smooth3D(playerID, x, y, z, currentTime, maxRate=0.1):
+    if playerID not in position3DHistory: # create new on join
+        position3DHistory[playerID] = {
+            'thisX': x, 'thisY': y, 'thisZ': z,
+            'lastX': x, 'lastY': y, 'lastZ': z,
+            'time': currentTime,
+            'velocityX': 0.0, 'velocityY': 0.0, 'velocityZ': 0.0 # velocities
+        }
+        return x, y, z
 
-    px, py = smoothData[playerID]
+    history = position3DHistory[playerID]
+    elapsed = currentTime - history['time']
 
-    nx = px + alpha * (screenX - px)
-    ny = py + alpha * (screenY - py)
+    if x != history['thisX'] or y != history['thisY'] or z != history['thisZ']:
+        dt = currentTime - history['time']
 
-    smoothData[playerID] = (nx, ny)
-    return nx, ny
+        if dt > 0.001:
+            history['velocityX'] = (x - history['thisX']) / dt
+            history['velocityY'] = (y - history['thisY']) / dt
+            history['velocityZ'] = (z - history['thisZ']) / dt
+
+        # prepare for next iteration
+        history['lastX'], history['lastY'], history['lastZ'] = history['thisX'], history['thisY'], history['thisZ']
+        history['thisX'], history['thisY'], history['thisZ'] = x, y, z
+        history['time'] = currentTime
+
+        elapsed = 0.0
+
+    # interpolation
+    if elapsed <= maxRate:
+        time = elapsed / maxRate
+        return ( # standard lerping formula
+            history['lastX'] + (history['thisX'] - history['lastX']) * time,
+            history['lastY'] + (history['thisY'] - history['lastY']) * time,
+            history['lastZ'] + (history['thisZ'] - history['lastZ']) * time
+        )
+    else: # extrapolation
+        extra = elapsed - maxRate
+        return (
+            history['thisX'] + history['velocityX'] * extra,
+            history['thisY'] + history['velocityY'] * extra,
+            history['thisZ'] + history['velocityZ'] * extra
+        )
+
+position2DHistory = {}
+
+def smooth2D(playerID, x, y, currentTime, maxRate=0.1):
+    if playerID not in position2DHistory:
+        position2DHistory[playerID] = {
+            'thisX': x, 'thisY': y,
+            'lastX': x, 'lastY': y,
+            'time': currentTime,
+            'velocityX': 0.0, 'velocityY': 0.0
+        }
+        return x, y
+
+    history = position2DHistory[playerID]
+    elapsed = currentTime - history['time']
+
+    if x != history['thisX'] or y != history['thisY']:
+        dt = currentTime - history['time']
+        if dt > 0.001:
+            history['velocityX'] = (x - history['thisX']) / dt
+            history['velocityY'] = (y - history['thisY']) / dt
+
+        history['lastX'], history['lastY'] = history['thisX'], history['thisY']
+        history['thisX'], history['thisY'] = x, y
+        history['time'] = currentTime
+
+        elapsed = 0.0
+
+    if elapsed <= maxRate:
+        time = elapsed / maxRate
+        return (
+            history['lastX'] + (history['thisX'] - history['lastX']) * time,
+            history['lastY'] + (history['thisY'] - history['lastY']) * time
+        )
+    else:
+        extra = elapsed - maxRate
+        return (
+            history['thisX'] + history['velocityX'] * extra,
+            history['thisY'] + history['velocityY'] * extra
+        )
 
 # Unity = Left-handed, Y-up, Z-forward
 def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=90):
     vectorX = playerPosition['x'] - cameraInfo['x']
-    vectorY = playerPosition['y'] - cameraInfo['y'] - 0.5
+    vectorY = playerPosition['y'] - cameraInfo['y']
     vectorZ = playerPosition['z'] - cameraInfo['z']
 
     pitch = cameraInfo['pitch']

@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt, QTimer, QRectF
 from PyQt6.QtGui import QPainter, QPen, QColor
 
 from reader import MemoryReader
-from utils import getTargetPID, worldToScreen, smoothScreenPositions
+from utils import getTargetPID, worldToScreen, smooth2D, smooth3D
 
 class Overlay(QWidget):
     def __init__(self, pid):
@@ -59,12 +59,16 @@ class Overlay(QWidget):
         pen.setWidth(2)
         painter.setPen(pen)
 
+        currentTime = time.time()
+
         for player in self.playerDraws:
             playerID = player['id']
             x, y, z = player['x'], player['y'], player['z']
 
-            feetPosition = {'x': x, 'y': y - 2.5, 'z': z}
-            headPosition = {'x': x, 'y': y + 2.5, 'z': z}
+            smoothX, smoothY, smoothZ = smooth3D(playerID, x, y, z, currentTime)
+
+            feetPosition = {'x': smoothX, 'y': smoothY - 2, 'z': smoothZ}
+            headPosition = {'x': smoothX, 'y': smoothY + 3, 'z': smoothZ}
 
             feetScreenLocation = worldToScreen(feetPosition, self.cameraInfo, self.width, self.height)
             headScreenLocation = worldToScreen(headPosition, self.cameraInfo, self.width, self.height)
@@ -72,9 +76,6 @@ class Overlay(QWidget):
             if feetScreenLocation and headScreenLocation:
                 feetX, feetY, feetDepth = feetScreenLocation
                 headX, headY, headDepth = headScreenLocation
-
-                feetX, feetY = smoothScreenPositions("{}_feet".format(playerID), feetX, feetY)
-                headX, headY = smoothScreenPositions("{}_head".format(playerID), headX, headY)
 
                 boxHeight = feetY - headY
                 if boxHeight <= 0: continue
