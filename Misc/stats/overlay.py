@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt, QTimer, QRectF
 from PyQt6.QtGui import QPainter, QPen, QColor
 
 from reader import MemoryReader
-from utils import getTargetPID, worldToScreen, smoothCamera, smooth3D
+from utils import getTargetPID, getWindowSize, worldToScreen, smoothCamera, smooth3D
 
 class Overlay(QWidget):
     def __init__(self, pid):
@@ -26,16 +26,16 @@ class Overlay(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
 
-        screen = QApplication.primaryScreen().geometry()
-        self.width = screen.width()
-        self.height = screen.height()
-
-        if not fullscreen:
-            self.width = int(input("Window width (pixels)?: "))
-            self.height = int(input("Window height (pixels)?: "))
+        windowDimensions = () # getWindowSize(pid)
+        if windowDimensions:
+            self.x, self.y, self.width, self.height = windowDimensions
+        else:
+            screen = QApplication.primaryScreen().geometry()
+            self.x, self.y = 0, 0
+            self.width, self.height = screen.width(), screen.height()
 
         self.resize(self.width, self.height)
-        self.move(0, 0)
+        self.move(self.x, self.y)
 
         self.reader = MemoryReader(pid)
         self.reader.resolvePointerChain()

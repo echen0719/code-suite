@@ -1,5 +1,6 @@
 import math
 import psutil
+from Xlib import X, display
 
 def getTargetPID(targetName):
     for proc in psutil.process_iter(['pid', 'name']):
@@ -144,8 +145,27 @@ def smoothCamera(cameraInfo, currentTime, maxRate=0.01):
             'roll': normalizeAngle(history['thisRoll'] + history['velocityRoll'] * extra)
         }
 
+def getWindowSize(pid):
+    d = display.Display()
+    root = d.screen().root
+
+    # i don't know know how this works but I found it in a forum
+    windows = root.get_full_property(d.intern_atom('_NET_CLIENT_LIST'), X.AnyPropertyType).value
+
+    for wid in windows:
+        window = d.create_resource_object('window', wid)
+        pidProp = window.get_full_property(d.intern_atom('_NET_WM_PID'), X.AnyPropertyType)
+
+        if pidProp and pidProp.value[0] == pid:
+            geometry = window.get_geometry()
+            translation = window.translate_coords(root, 0, 0)
+            return (translation.x or 0, translation.y or 0, geometry.width, geometry.height)
+
+    d.close()
+    return None
+
 # Unity = Left-handed, Y-up, Z-forward
-def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=90):
+def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=60):
     vectorX = playerPosition['x'] - cameraInfo['x']
     vectorY = playerPosition['y'] - cameraInfo['y']
     vectorZ = playerPosition['z'] - cameraInfo['z']
