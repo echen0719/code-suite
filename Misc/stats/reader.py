@@ -2,29 +2,16 @@ import os
 import struct
 import time
 import math
-from values import positionValues, healthValues
+from values import commonValues, CGameStateValues, webguyValues
 
 class MemoryReader:
     def __init__(self, pid):
         self.pid = pid
         self.memoryFile = os.open(f"/proc/{pid}/mem", os.O_RDONLY)
+
         self.baseAddress = self.getBase()
-
-        self.positionStaticRVA = positionValues['staticRVA']
-        self.positionOffsets = positionValues['offsets']
-        self.positionOffset = positionValues['positionOffset']
-
-        self.arrayDataStart = positionValues['arrayDataStartOffset']
-        self.arrayDataLengthOffset = positionValues['arrayDataLengthOffset']
-
-        self.healthStaticRVA = healthValues['staticRVA']
-        self.healthOffsets = healthValues['offsets']
-
-        self.healthArrayDataStart = healthValues['arrayDataStartOffset']
-        self.healthArrayLengthOffset = healthValues['arrayDataLengthOffset']
-
-        self.cameraPositionOffset = positionValues['cameraPositionOffset']
-        self.cameraOrientationOffset = positionValues['cameraOrientationOffset']
+        self.webguyBase = 0
+        self.CGameStateBase = 0
 
         self.maxPlayerCount = 64
         self.vector3Length = 0xC # 12 bytes
@@ -64,40 +51,46 @@ class MemoryReader:
             pass
         return 0
 
-    def resolvePointerChain(self, method):
-        try:
-            if method == "position":
-                staticRVA = self.positionStaticRVA
-                offsets = self.positionOffsets
-            elif method == "health":
-                staticRVA = self.healthStaticRVA
-                offsets = self.healthOffsets
-
-            pointer = self.readPointer(self.baseAddress + staticRVA)
-            for offset in offsets:
+    def resolvePointerChain(self):
+        pointer = self.readPointer(self.baseAddress + CGameStateValues["staticRVA"])
+        if pointer:
+            for offset in CGameStateValues["offsets"]:
                 pointer = self.readPointer(pointer + offset)
-            return pointer
-        except:
-            return 0
+                if not pointer: break
+        self.CGameStateBase = pointer
+
+        pointer = self.readPointer(self.baseAddress + webguyValues["staticRVA"])
+        if pointer:
+            for offset in webguyValues["offsets"]:
+                pointer = self.readPointer(pointer + offset)
+                if not pointer: break
+        self.webguyBase = pointer
 
     def getPlayers(self):
-        CGameStatePointer = self.resolvePointerChain("position")
-        if not CGameStatePointer: return []
+        if not self.CGameStateBase or not self.webguyBase: return []
 
-        positionsList = self.readPointer(CGameStatePointer + self.positionOffset)
-        if not positionsList: return []
+        # positions
+        positionPointer = self.readPointer(self.CGameStateBase + CGameStateValues["positionOffset"])
+        if not positionPointer: return []
 
-        # 64 max players all the time
-        coordinates = self.read(positionsList + self.arrayDataStart, self.maxPlayerCount * self.vector3Length)
-        if not coordinates or len(coordinates) < self.maxPlayerCount * self.vector3Length: return []
+        positionArrayLength = self.readInt(positionPointer + commonValues["arrayLengthOffset"]) if positionPointer else self.maxPlayerCount
+        positionData = self.read(positionPointer + commonValues["arrayStartOffset"], positionArrayLength * self.vector3Length)
 
-        floats = struct.unpack('<{}f'.format(self.maxPlayerCount * 3), coordinates)
+        # visibility
+        visiblePointer = self.readPointer(self.webguyBase + webguyValues["visibleListOffset"])
+        if not visiblePointer: return []
+
+        visibleArrayLength = self.readInt(visiblePointer + commonValues["arrayLengthOffset"]) if visiblePointer else self.maxPlayerCount
+        visibleData = self.read(visiblePointer + commonValues["arrayStartOffset"], visibleArrayLength)
+
+        positions = struct.unpack('<{}f'.format(positionArrayLength * 3), positionData)
+        visibles = struct.unpack('<{}B'.format(visibleArrayLength), visibleData)
 
         currentTime = time.time()
         activePlayers = []
 
-        for i in range(self.maxPlayerCount):
-            x, y, z = floats[i * 3], floats[i * 3 + 1], floats[i * 3 + 2]
+        for i in range(min(positionArrayLength, visibleArrayLength, self.maxPlayerCount)):
+            x, y, z = positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]
             if x == 0.0 and y == 0.0 and z == 0.0:
                 continue # empty values = no memory there
 
@@ -116,33 +109,16 @@ class MemoryReader:
             if currentTime - self.slotHistory[i]['lastMoveTime'] > self.timeout:
                 continue
 
-            activePlayers.append({'id': i, 'x': x, 'y': y, 'z': z})
+            activePlayers.append({'id': i, 'x': x, 'y': y, 'z': z, 'visible': visibles[i] != 0})
 
         return activePlayers
 
-    def getHealth(self):
-        CGameStatePointer = self.resolvePointerChain("health")
-        if not CGameStatePointer: return []
-
-        healthData = self.read(CGameStatePointer + self.healthArrayDataStart, self.maxPlayerCount * 4)
-        if not healthData: return []
-
-        healthList = struct.unpack("<{}f".format(self.maxPlayerCount), healthData)
-        playersHealth = []
-
-        for i, health in enumerate(healthList):
-            if health <= 0: continue
-            playersHealth.append({'id': i, 'health': health})
-
-        return playersHealth
-
     def getCameraInfo(self):
-        CGameStatePointer = self.resolvePointerChain("position")
-        if not CGameStatePointer: return None
+        if not self.CGameStateBase: return None
 
         # viewPos - 0x18, viewOrient - 0x24, viewOrient end = 0x30, 0x30 - 0x24 = 24
-        cameraCoordinates = self.read(CGameStatePointer + self.cameraPositionOffset, self.vector3Length)
-        cameraOrientation = self.read(CGameStatePointer + self.cameraOrientationOffset, self.vector3Length)
+        cameraCoordinates = self.read(self.CGameStateBase + CGameStateValues["cameraPositionOffset"], self.vector3Length)
+        cameraOrientation = self.read(self.CGameStateBase + CGameStateValues["cameraOrientationOffset"], self.vector3Length)
 
         if not cameraCoordinates or not cameraOrientation: return None
 
@@ -160,9 +136,3 @@ class MemoryReader:
             'yaw': math.radians(yaw),
             "roll": math.radians(roll)
         }
-
-    def close(self):
-        try:
-            self.memoryFile.close()
-        except Exception:
-            pass

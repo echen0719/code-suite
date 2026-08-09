@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt, QTimer, QRectF
 from PyQt6.QtGui import QPainter, QPen, QColor
 
 from reader import MemoryReader
-from utils import getTargetPID, worldToScreen, smooth2D, smooth3D
+from utils import getTargetPID, worldToScreen, smoothCamera, smooth3D
 
 class Overlay(QWidget):
     def __init__(self, pid):
@@ -38,17 +38,19 @@ class Overlay(QWidget):
         self.move(0, 0)
 
         self.reader = MemoryReader(pid)
+        self.reader.resolvePointerChain()
         self.playerDraws = []
         self.cameraInfo = None
 
         self.timer = QTimer(self)
+        self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self.onData)
         self.timer.start(int(1000 / FPS))
 
     def onData(self):
         self.playerDraws = self.reader.getPlayers()
         self.cameraInfo = self.reader.getCameraInfo()
-        self.update()
+        self.repaint()
 
     def paintEvent(self, event):
         if not self.playerDraws or not self.cameraInfo:
@@ -60,6 +62,7 @@ class Overlay(QWidget):
         painter.setPen(pen)
 
         currentTime = time.time()
+        # smoothedCamera = smoothCamera(self.cameraInfo, currentTime)
 
         for player in self.playerDraws:
             playerID = player['id']

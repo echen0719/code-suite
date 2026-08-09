@@ -61,45 +61,88 @@ def smooth3D(playerID, x, y, z, currentTime, maxRate=0.1):
             history['thisZ'] + history['velocityZ'] * extra
         )
 
-position2DHistory = {}
+def normalizeAngle(angle): # so turning >180 or <-180 doesn't cause weird math
+    return math.atan2(math.sin(angle), math.cos(angle))
 
-def smooth2D(playerID, x, y, currentTime, maxRate=0.1):
-    if playerID not in position2DHistory:
-        position2DHistory[playerID] = {
-            'thisX': x, 'thisY': y,
-            'lastX': x, 'lastY': y,
+def deltaAngle(old, new):
+    return math.atan2(math.sin(new - old), math.cos(new - old))
+
+cameraHistory = {}
+
+def smoothCamera(cameraInfo, currentTime, maxRate=0.01):
+    if cameraInfo is None:
+        return None
+
+    if not cameraHistory:
+        cameraHistory.update({
+            'thisX': cameraInfo['x'], 'thisY': cameraInfo['y'], 'thisZ': cameraInfo['z'],
+            'lastX': cameraInfo['x'], 'lastY': cameraInfo['y'], 'lastZ': cameraInfo['z'],
+            'thisPitch': cameraInfo['pitch'], 'thisYaw': cameraInfo['yaw'], 'thisRoll': cameraInfo['roll'],
+            'lastPitch': cameraInfo['pitch'], 'lastYaw': cameraInfo['yaw'], 'lastRoll': cameraInfo['roll'],
             'time': currentTime,
-            'velocityX': 0.0, 'velocityY': 0.0
-        }
-        return x, y
+            'velocityX': 0.0, 'velocityY': 0.0, 'velocityZ': 0.0, # velocities
+            'velocityPitch': 0.0, 'velocityYaw': 0.0, 'velocityRoll': 0.0
+        })
+        return cameraInfo
 
-    history = position2DHistory[playerID]
+    history = cameraHistory
     elapsed = currentTime - history['time']
 
-    if x != history['thisX'] or y != history['thisY']:
+    positionChanged = (cameraInfo['x'] != history['thisX'] or
+        cameraInfo['y'] != history['thisY'] or
+        cameraInfo['z'] != history['thisZ'])
+
+    angleChanged = (abs(deltaAngle(history['thisPitch'], cameraInfo['pitch'])) > 0.001 or
+        abs(deltaAngle(history['thisYaw'], cameraInfo['yaw'])) > 0.001 or
+        abs(deltaAngle(history['thisRoll'], cameraInfo['roll'])) > 0.001)
+
+    if (positionChanged or angleChanged):
         dt = currentTime - history['time']
+
         if dt > 0.001:
-            history['velocityX'] = (x - history['thisX']) / dt
-            history['velocityY'] = (y - history['thisY']) / dt
+            history['velocityX'] = (cameraInfo['x'] - history['thisX']) / dt
+            history['velocityY'] = (cameraInfo['y'] - history['thisY']) / dt
+            history['velocityZ'] = (cameraInfo['z'] - history['thisZ']) / dt
+            history['velocityPitch'] = deltaAngle(history['thisPitch'], cameraInfo['pitch']) / dt
+            history['velocityYaw'] = deltaAngle(history['thisYaw'], cameraInfo['yaw']) / dt
+            history['velocityRoll'] = deltaAngle(history['thisRoll'], cameraInfo['roll']) / dt
+        else:
+            history['velocityX'] = 0.0
+            history['velocityY'] = 0.0
+            history['velocityZ'] = 0.0
+            history['velocityPitch'] = 0.0
+            history['velocityYaw'] = 0.0
+            history['velocityRoll'] = 0.0
 
-        history['lastX'], history['lastY'] = history['thisX'], history['thisY']
-        history['thisX'], history['thisY'] = x, y
+        history['lastX'], history['lastY'], history['lastZ'] = history['thisX'], history['thisY'], history['thisZ']
+        history['lastPitch'], history['lastYaw'], history['lastRoll'] = history['thisPitch'], history['thisYaw'], history['thisRoll']
+
+        history['thisX'], history['thisY'], history['thisZ'] = cameraInfo['x'], cameraInfo['y'], cameraInfo['z']
+        history['thisPitch'], history['thisYaw'], history['thisRoll'] = cameraInfo['pitch'], cameraInfo['yaw'], cameraInfo['roll']
+
         history['time'] = currentTime
-
         elapsed = 0.0
 
-    if elapsed <= maxRate:
+    if elapsed <= maxRate: # interpolation
         time = elapsed / maxRate
-        return (
-            history['lastX'] + (history['thisX'] - history['lastX']) * time,
-            history['lastY'] + (history['thisY'] - history['lastY']) * time
-        )
-    else:
+        return {
+            'x': history['lastX'] + (history['thisX'] - history['lastX']) * time,
+            'y': history['lastY'] + (history['thisY'] - history['lastY']) * time,
+            'z': history['lastZ'] + (history['thisZ'] - history['lastZ']) * time,
+            'pitch': normalizeAngle(history['lastPitch'] + deltaAngle(history['lastPitch'], history['thisPitch']) * time),
+            'yaw': normalizeAngle(history['lastYaw'] + deltaAngle(history['lastYaw'], history['thisYaw']) * time),
+            'roll': normalizeAngle(history['lastRoll'] + deltaAngle(history['lastRoll'], history['thisRoll']) * time)
+        }
+    else: # extrapolation
         extra = elapsed - maxRate
-        return (
-            history['thisX'] + history['velocityX'] * extra,
-            history['thisY'] + history['velocityY'] * extra
-        )
+        return {
+            'x': history['thisX'] + history['velocityX'] * extra,
+            'y': history['thisY'] + history['velocityY'] * extra,
+            'z': history['thisZ'] + history['velocityZ'] * extra,
+            'pitch': normalizeAngle(history['thisPitch'] + history['velocityPitch'] * extra),
+            'yaw': normalizeAngle(history['thisYaw'] + history['velocityYaw'] * extra),
+            'roll': normalizeAngle(history['thisRoll'] + history['velocityRoll'] * extra)
+        }
 
 # Unity = Left-handed, Y-up, Z-forward
 def worldToScreen(playerPosition, cameraInfo, screenWidth, screenHeight, fov=90):
