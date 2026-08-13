@@ -21,5 +21,7 @@ webguyValues = {
     "staticRVA": 0x35F4968,
     "offsets": [0xB8, 0x10],
 
-    "visibleListOffset": 0x560
+    "visibleListOffset": 0x560,
+    "mouseSensitivity": 0x314,
+    "scopeSensitivity": 0x31C
 }
