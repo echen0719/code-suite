@@ -1,28 +1,50 @@
 import sys
 import time
 import math
+import threading
 
 from PyQt6.QtWidgets import QApplication
-from pynput.mouse import Controller
-from pynput.keyboard import Listener as KeyboardListener
+from evdev import UInput, ecodes, InputDevice, list_devices
 
 from reader import MemoryReader
 from utils import getTargetPID, getWindowSize, worldToScreen
 
-rate = 0.0063
-aimActive = True
+rate = float(1/165.0)
+aimActive = False
 
-def onToggle(key):
-    if key.char == 'v':
-        aimActive = not aimActive
-        print("Aim {}".format('on' if aimActive else 'off'))
+def listener():
+    global aimActive
+
+    for path in list_devices():
+        device = InputDevice(path)
+        caps = device.capabilities()
+
+        if ecodes.EV_KEY not in caps: continue # perpherials have ev keys
+        keys = caps[ecodes.EV_KEY]
+
+        validKeys = [ecodes.KEY_W, ecodes.KEY_A, ecodes.KEY_S, ecodes.KEY_D, ecodes.KEY_SPACE, ecodes.KEY_V]
+        if not all(key in keys for key in validKeys): continue # to check if keyboard is valid
+        if not "keyboard" in device.name.lower(): continue
+
+        print("Listening for 'V' on keyboard: {}".format(device.name))
+
+        for event in device.read_loop():
+            if event.type == ecodes.EV_KEY and event.code == ecodes.KEY_V and event.value == 1:
+                aimActive = not aimActive
+                print("Aim {}".format('on' if aimActive else 'off'))
+        break
 
 def aim(pid):
+    mouse = UInput({
+        ecodes.EV_REL: (ecodes.REL_X, ecodes.REL_Y),
+        ecodes.EV_KEY: (ecodes.BTN_LEFT, ecodes.BTN_RIGHT) # making sure DEs recognize as "mouse"
+    }, name='virtual-mus-musculus')
+    if mouse: print("Created virtual mouse: {}".format(mouse.name))
+
     reader = MemoryReader(pid)
-    mouse = Controller()
     app = QApplication(sys.argv)
 
-    windowDimensions = () # getWindowSize(pid)
+    windowDimensions = getWindowSize(pid)
     if windowDimensions:
         x, y, width, height = windowDimensions
     else:
@@ -32,10 +54,9 @@ def aim(pid):
 
     centerX = width / 2
     centerY = height / 2
+    print(centerX, centerY)
 
-    # mouse listening for snapping purposes
-    listener = KeyboardListener(on_click=onToggle)
-    listener.start()
+    threading.Thread(target=listener, daemon=True).start()
 
     while True:
         if not aimActive:
@@ -75,7 +96,14 @@ def aim(pid):
             dX = targetX - centerX
             dY = targetY - centerY
 
-            mouse.move(int(dX), int(dY))
+            moveX = round(dX)
+            moveY = round(dY)
+
+            if moveX != 0:
+                mouse.write(ecodes.EV_REL, ecodes.REL_X, moveX)
+            if moveY != 0:
+                mouse.write(ecodes.EV_REL, ecodes.REL_Y, moveY)
+            mouse.syn()
 
         time.sleep(rate)
 
