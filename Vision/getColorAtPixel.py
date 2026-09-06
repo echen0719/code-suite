@@ -36,8 +36,10 @@ def getColorOnMouseClick(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         b, g, r = param[y, x] # turns out y, x will give correct value, not the other way around
         textX, textY = x, y
-        fontColor = (int(255 - b), int(255 - g), int(255 - r)) # inverted
+        fontColor = (int(b), int(g), int(r)) # inverted
         colorInfo = '({}, {}): rgb({}, {}, {}) | #{:02x}{:02x}{:02x}'.format(x, y, r, g, b, r, g, b)
+
+        print(colorInfo)
 
 def recordVideo():
     global colorInfo, fontColor, textX, textY
